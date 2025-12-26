@@ -1,0 +1,463 @@
+/* ... [Previous CSS Variables & Theme Classes remain the same] ... */
+:root {
+    --f-bg: #121212;
+    --f-card: #1e1e1e;
+    --f-text: #e0e0e0;
+    --f-accent: #4caf50;
+    --f-danger: #ff5252;
+    --f-warn: #ff9800;
+    --f-gold: #ffd700;
+    --f-border: #333;
+    --f-font: 'Segoe UI', monospace;
+}
+
+/* ... Theme classes ... */
+
+.focus-container {
+    font-family: var(--f-font);
+    background: var(--f-bg);
+    color: var(--f-text);
+    padding: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+    min-height: 100vh;
+}
+
+/* ... HUD Styles (Same as before) ... */
+.focus-hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--f-card);
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px solid var(--f-border);
+    margin-bottom: 25px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.hud-stat-group {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex: 2;
+}
+
+.level-badge {
+    background: var(--f-border);
+    padding: 5px 12px;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.hud-bars {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.bar-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+}
+
+.bar-track {
+    flex: 1;
+    height: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.bar-fill {
+    height: 100%;
+    transition: width 0.5s ease;
+}
+
+.hp-fill {
+    background: var(--f-danger);
+}
+
+.xp-fill {
+    background: var(--f-accent);
+}
+
+.hud-currency-group {
+    display: flex;
+    gap: 15px;
+    margin: 0 20px;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.hud-btn {
+    background: var(--f-border);
+    border: none;
+    color: var(--f-text);
+    font-size: 1.2rem;
+    padding: 8px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.hud-btn:hover {
+    background: var(--f-accent);
+    color: #000;
+}
+
+/* --- NEW: QUICK INPUT --- */
+.focus-input-wrapper {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+#focus-quick-add {
+    flex: 1;
+    background: var(--f-card);
+    border: 1px solid var(--f-border);
+    padding: 12px;
+    color: var(--f-text);
+    border-radius: 4px;
+    font-family: var(--f-font);
+}
+
+.add-btn {
+    background: var(--f-accent);
+    border: none;
+    width: 50px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+/* --- NEW: INBOX LIST --- */
+.inbox-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.inbox-item {
+    background: var(--f-card);
+    padding: 10px 15px;
+    border-radius: 4px;
+    border-left: 3px solid #999;
+    display: flex;
+    justify-content: space-between;
+}
+
+.is-hidden {
+    display: none !important;
+}
+
+/* ... [Rest of the CSS (Sections, Biomes, Modals) remains the same] ... */
+.section-header {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.7;
+    margin-bottom: 10px;
+    margin-top: 20px;
+    border-bottom: 1px solid var(--f-border);
+    padding-bottom: 5px;
+}
+
+.protocol-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+}
+
+.protocol-card {
+    background: var(--f-card);
+    border: 1px solid var(--f-border);
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+    opacity: 0.8;
+}
+
+.protocol-card:hover {
+    transform: translateY(-2px);
+    opacity: 1;
+    border-color: var(--f-text);
+}
+
+.protocol-card.done {
+    background: rgba(76, 175, 80, 0.2);
+    border-color: var(--f-accent);
+    opacity: 0.5;
+}
+
+.biome-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.biome-card {
+    background: var(--f-card);
+    border: 2px solid var(--f-border);
+    padding: 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.biome-card.rust-0 {
+    border-color: var(--f-accent);
+}
+
+.biome-card.rust-1 {
+    border-color: var(--f-warn);
+}
+
+.biome-card.rust-2 {
+    border-color: var(--f-danger);
+    background: linear-gradient(45deg, var(--f-card), rgba(255, 82, 82, 0.1));
+}
+
+.biome-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.biome-count {
+    background: var(--f-border);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+
+.biome-desc {
+    font-size: 0.8rem;
+    opacity: 0.6;
+}
+
+.mission-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.mission-item {
+    background: var(--f-card);
+    padding: 12px;
+    border-left: 4px solid var(--f-warn);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.mission-item.overdue {
+    border-left-color: var(--f-danger);
+}
+
+/* Modals */
+.focus-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-card {
+    background: var(--f-card);
+    border: 1px solid var(--f-border);
+    padding: 20px;
+    width: 90%;
+    max-width: 500px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.tactical-options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.tactical-btn {
+    background: var(--f-border);
+    border: 1px solid var(--f-text);
+    color: var(--f-text);
+    padding: 15px;
+    text-align: left;
+    cursor: pointer;
+    font-weight: bold;
+    border-radius: 6px;
+    transition: background 0.2s;
+}
+
+.tactical-btn:hover {
+    background: var(--f-accent);
+    color: black;
+}
+
+.tactical-header {
+    display: flex;
+    justify-content: space-between;
+}
+
+.close-modal-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--f-text);
+    cursor: pointer;
+}
+
+.armory-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.shop-item {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 10px;
+    border: 1px solid var(--f-border);
+    text-align: center;
+    cursor: pointer;
+    border-radius: 6px;
+}
+
+.shop-item:hover {
+    border-color: var(--f-gold);
+}
+
+.shop-item.owned {
+    opacity: 0.5;
+    pointer-events: none;
+    text-decoration: line-through;
+}
+
+.console-screen {
+    background: #000;
+    color: #0f0;
+    padding: 10px;
+    font-family: monospace;
+    font-size: 0.8rem;
+    margin-bottom: 10px;
+    border-radius: 4px;
+}
+
+#console-input {
+    width: 100%;
+    height: 100px;
+    background: #222;
+    color: #fff;
+    border: 1px solid #444;
+    padding: 10px;
+}
+
+.console-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+}
+
+/* --- THEMES --- */
+
+/* Cyberpunk Theme */
+body.theme-cyberpunk {
+    --f-bg: #000000;
+    --f-card: #0a0a0a;
+    --f-text: #00ff00;
+    --f-accent: #00ff00;
+    --f-border: #004400;
+    --f-gold: #ffff00;
+    --f-font: 'Courier New', monospace;
+}
+
+body.theme-cyberpunk .hud-btn,
+body.theme-cyberpunk .tactical-btn {
+    border: 1px solid #00ff00;
+}
+
+/* Paper Theme */
+body.theme-paper {
+    --f-bg: #f0f0f0;
+    --f-card: #ffffff;
+    --f-text: #111111;
+    --f-accent: #000000;
+    --f-border: #000000;
+    --f-gold: #d4af37;
+    --f-font: 'Georgia', serif;
+}
+
+body.theme-paper .focus-hud,
+body.theme-paper .biome-card {
+    box-shadow: 4px 4px 0px #000;
+    border-width: 2px;
+}
+
+/* --- BUFFS & STATUS EFFECTS --- */
+.hud-buffs {
+    display: flex;
+    gap: 10px;
+    margin-right: 15px;
+}
+
+.buff-item {
+    position: relative;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--f-accent);
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    box-shadow: 0 0 10px var(--f-accent);
+    animation: pulse 2s infinite;
+}
+
+.buff-count {
+    position: absolute;
+    bottom: -5px;
+    right: -5px;
+    background: var(--f-bg);
+    border: 1px solid var(--f-text);
+    color: var(--f-text);
+    font-size: 0.7rem;
+    padding: 2px 5px;
+    border-radius: 10px;
+    font-weight: bold;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 5px var(--f-accent);
+    }
+
+    50% {
+        box-shadow: 0 0 15px var(--f-accent);
+    }
+
+    100% {
+        box-shadow: 0 0 5px var(--f-accent);
+    }
+}

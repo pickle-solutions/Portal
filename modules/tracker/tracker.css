@@ -1,0 +1,699 @@
+/* === BRANDING & THEME === */
+.tracker-wrapper {
+    --pickle-green: #558B2F;
+    --pickle-green-light: #7da453;
+    --sync-blue: #4a90e2;
+    --danger-red: #c94c4c;
+    --light-bg: #f4f7f6;
+    --light-card-bg: #ffffff;
+    --light-text: #333;
+    --light-text-soft: #555;
+    --light-border: #ddd;
+    --light-heading: #3a5a20;
+}
+
+/* === KEY FIX: Box Sizing Reset === */
+.tracker-wrapper,
+.tracker-wrapper * {
+    box-sizing: border-box;
+}
+
+/* Basic setup */
+.tracker-wrapper {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--light-bg);
+    color: var(--light-text);
+    margin: 0;
+    padding: 10px;
+    width: 100%;
+    overflow-x: hidden;
+    /* Prevent main page scroll issues */
+}
+
+.tracker-wrapper .container {
+    max-width: 800px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.is-hidden {
+    display: none !important;
+}
+
+/* === HEADER === */
+.tracker-wrapper .header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.tracker-wrapper h1 {
+    color: var(--pickle-green);
+    margin: 0;
+    font-size: 1.8rem;
+}
+
+.tracker-wrapper h2 {
+    color: var(--light-text-soft);
+    border-bottom: 2px solid var(--light-border);
+    padding-bottom: 5px;
+    margin-bottom: 15px;
+    font-size: 1.4rem;
+}
+
+/* === TABS === */
+.tracker-wrapper .tracker-tabs {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid var(--light-border);
+    overflow-x: auto;
+    padding-bottom: 2px;
+}
+
+.tracker-wrapper .tab-btn {
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    padding: 10px 15px;
+    font-size: 1rem;
+    color: var(--light-text-soft);
+    cursor: pointer;
+    white-space: nowrap;
+    margin-bottom: -2px;
+}
+
+.tracker-wrapper .tab-btn.active {
+    border-bottom: 3px solid var(--pickle-green);
+    color: var(--pickle-green);
+    font-weight: bold;
+}
+
+.tracker-wrapper .tab-content {
+    display: none;
+    animation: fadeIn 0.3s;
+}
+
+.tracker-wrapper .tab-content.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* === CARDS === */
+.tracker-wrapper .card {
+    background-color: var(--light-card-bg);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    padding: 20px;
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+/* === FORMS & INPUTS === */
+.tracker-wrapper label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: var(--light-text-soft);
+    font-size: 0.9rem;
+}
+
+.tracker-wrapper input,
+.tracker-wrapper select,
+.tracker-wrapper textarea {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1rem;
+    max-width: 100%;
+    /* Prevent inputs from breaking layout */
+}
+
+/* Settings Group (Client/Project dropdowns) */
+.tracker-wrapper .settings-group {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    /* Ensure they wrap on mobile */
+}
+
+.tracker-wrapper .setting-item {
+    flex: 1;
+    min-width: 140px;
+    /* Allow shrinking for small screens */
+}
+
+/* Duration Group Fixes (The main culprit) */
+.tracker-wrapper .duration-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    /* CRITICAL: Allows Date to drop to next line */
+}
+
+/* Inner nested groups (like Hrs/Mins) */
+.tracker-wrapper .duration-group .duration-group {
+    margin-bottom: 0;
+    /* Remove double margin */
+    flex: 1;
+    min-width: 140px;
+}
+
+.tracker-wrapper .duration-group input {
+    text-align: center;
+}
+
+.tracker-wrapper .duration-group>div,
+.tracker-wrapper .duration-group>input {
+    flex: 1;
+    min-width: 120px;
+    /* Ensures inputs don't get unreadably small */
+}
+
+.tracker-wrapper .budget-group {
+    display: flex;
+    gap: 10px;
+}
+
+.tracker-wrapper .budget-group input {
+    flex: 2;
+}
+
+.tracker-wrapper .budget-group select {
+    flex: 1;
+}
+
+.tracker-wrapper .checkbox-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+    cursor: pointer;
+}
+
+.tracker-wrapper .checkbox-container input {
+    width: auto;
+    margin: 0 10px 0 0;
+}
+
+.tracker-wrapper .checkbox-container label {
+    margin: 0;
+    cursor: pointer;
+}
+
+/* === TIMER DISPLAY === */
+.tracker-wrapper #timer-display {
+    font-size: 3.5rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--pickle-green);
+    text-align: center;
+    margin: 10px 0 20px 0;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    word-break: break-word;
+    /* Safety for very small screens */
+    line-height: 1;
+}
+
+/* === BUTTONS === */
+.tracker-wrapper button {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.tracker-wrapper button.small-btn {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    width: auto;
+}
+
+.tracker-wrapper button.primary-btn {
+    background-color: var(--pickle-green);
+    color: white;
+}
+
+.tracker-wrapper button.primary-btn:hover {
+    background-color: var(--pickle-green-light);
+}
+
+.tracker-wrapper #start-stop-btn.running {
+    background-color: #ff6b6b;
+}
+
+.tracker-wrapper button.outline-btn {
+    background: transparent;
+    border: 1px solid var(--pickle-green);
+    color: var(--pickle-green);
+}
+
+.tracker-wrapper button.outline-btn:hover {
+    background: #f1f8e9;
+}
+
+.tracker-wrapper button.danger-btn {
+    background-color: #ef5350;
+    color: white;
+}
+
+.tracker-wrapper button.sync-btn {
+    background-color: var(--sync-blue);
+    color: white;
+}
+
+/* === LOGS === */
+.tracker-wrapper .totals-summary {
+    display: flex;
+    justify-content: space-around;
+    background: #f9f9f9;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    /* Wrap on small screens */
+    gap: 10px;
+}
+
+.tracker-wrapper .total-item {
+    text-align: center;
+    min-width: 100px;
+}
+
+.tracker-wrapper .total-item strong {
+    display: block;
+    font-size: 1.5rem;
+    color: var(--light-heading);
+}
+
+.tracker-wrapper .total-cost {
+    color: var(--pickle-green) !important;
+}
+
+/* === Filter Group (Mobile Optimized) === */
+.tracker-wrapper .filter-group {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 20px;
+    background: #fff;
+    padding: 10px;
+    border: 1px solid var(--light-border);
+    border-radius: 8px;
+}
+
+.tracker-wrapper .filter-group input,
+.tracker-wrapper .filter-group select,
+.tracker-wrapper .filter-group button,
+.tracker-wrapper .filter-group label {
+    margin-bottom: 0;
+}
+
+.tracker-wrapper .filter-group input[type="search"] {
+    flex-basis: 100%;
+    width: 100%;
+    margin-bottom: 5px;
+}
+
+.tracker-wrapper .filter-group input[type="date"] {
+    flex: 1;
+    min-width: 110px;
+    padding: 8px;
+}
+
+.tracker-wrapper .filter-group label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 0;
+    cursor: pointer;
+    font-weight: normal;
+    white-space: nowrap;
+    font-size: 0.9rem;
+    color: var(--light-text);
+    padding: 5px;
+    background: #f9f9f9;
+    border-radius: 4px;
+    border: 1px solid #eee;
+}
+
+.tracker-wrapper .filter-group input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+}
+
+.tracker-wrapper .filter-group button#filter-clear-btn {
+    width: auto;
+    flex-shrink: 0;
+    padding: 8px 12px;
+}
+
+/* === LOG ENTRIES === */
+.tracker-wrapper .log-date-group {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    overflow: hidden;
+    background: #fff;
+}
+
+.tracker-wrapper .log-date-header {
+    background: #f1f8e9;
+    padding: 8px 15px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: var(--light-heading);
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+}
+
+.tracker-wrapper .log-entry-item {
+    border-bottom: 1px solid #eee;
+}
+
+.tracker-wrapper .log-entry-item:last-child {
+    border-bottom: none;
+}
+
+.tracker-wrapper .log-summary {
+    padding: 12px 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    gap: 10px;
+}
+
+.tracker-wrapper .log-summary:hover {
+    background-color: #fafafa;
+}
+
+.tracker-wrapper .log-info {
+    flex: 1;
+    overflow: hidden;
+}
+
+.tracker-wrapper .log-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #333;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.tracker-wrapper .log-client {
+    font-weight: normal;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.tracker-wrapper .log-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+}
+
+.tracker-wrapper .log-desc {
+    font-size: 0.85rem;
+    color: #777;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.tracker-wrapper .badge {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.tracker-wrapper .badge.cat {
+    background: #e3f2fd;
+    color: #1565c0;
+}
+
+.tracker-wrapper .badge.pill {
+    border-radius: 12px;
+}
+
+.tracker-wrapper .badge.unbilled {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.tracker-wrapper .badge.billed {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.tracker-wrapper .badge.nonbill {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.tracker-wrapper .badge.id-badge {
+    background: #eee;
+    color: #666;
+    font-family: monospace;
+}
+
+.tracker-wrapper .log-right {
+    text-align: right;
+    min-width: 80px;
+}
+
+.tracker-wrapper .log-time {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #333;
+}
+
+.tracker-wrapper .log-cost {
+    font-size: 0.85rem;
+    color: var(--pickle-green);
+    font-weight: 600;
+}
+
+/* Details Panel (Expanded) */
+.tracker-wrapper .log-details-panel {
+    background-color: #fafafa;
+    padding: 15px;
+    border-top: 1px solid #eee;
+    display: none;
+}
+
+.tracker-wrapper .log-details-panel.open {
+    display: block;
+}
+
+.tracker-wrapper .detail-row {
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    word-wrap: break-word;
+    /* Prevent long notes from breaking layout */
+}
+
+.tracker-wrapper .detail-controls {
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: center;
+}
+
+.tracker-wrapper .detail-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 15px;
+    flex-wrap: wrap;
+    /* Allow buttons to stack if needed */
+}
+
+.tracker-wrapper .control-group {
+    display: flex;
+    align-items: center;
+    font-size: 0.9rem;
+    color: #555;
+}
+
+.tracker-wrapper .control-group input {
+    width: auto;
+    margin: 0 5px 0 0;
+}
+
+.tracker-wrapper .rounding-select {
+    padding: 4px;
+    font-size: 0.85rem;
+    width: auto;
+    border: 1px solid #ccc;
+    margin-left: 5px;
+}
+
+/* === LISTS === */
+.tracker-wrapper #project-list,
+.tracker-wrapper #client-list {
+    list-style: none;
+    padding: 0;
+    margin: 15px 0 0 0;
+}
+
+.tracker-wrapper #project-list li,
+.tracker-wrapper #client-list li {
+    padding: 12px 8px;
+    border-bottom: 1px solid var(--light-border);
+}
+
+.tracker-wrapper .list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.tracker-wrapper .list-header strong {
+    font-size: 1.05rem;
+}
+
+.tracker-wrapper .list-sub {
+    font-size: 0.85rem;
+    color: #666;
+}
+
+/* Progress Bar */
+.tracker-wrapper .progress-bar-container {
+    width: 100%;
+    background-color: #eee;
+    border-radius: 4px;
+    height: 8px;
+    margin-top: 8px;
+}
+
+.tracker-wrapper .progress-bar {
+    height: 8px;
+    background-color: var(--pickle-green);
+    border-radius: 4px;
+    width: 0%;
+    transition: width 0.3s;
+}
+
+.tracker-wrapper .progress-text {
+    font-size: 0.8rem;
+    color: #666;
+    margin-top: 2px;
+}
+
+/* === INVOICES === */
+.tracker-wrapper #invoice-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 5px;
+    border-bottom: 1px solid var(--light-border);
+}
+
+.tracker-wrapper .invoice-list-status {
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    margin-right: 10px;
+}
+
+.tracker-wrapper .invoice-list-status.billed {
+    background-color: #fff8e1;
+    color: #f57f17;
+}
+
+.tracker-wrapper .invoice-list-status.paid {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+}
+
+.tracker-wrapper .view-inv-btn,
+.tracker-wrapper .del-inv-btn,
+.tracker-wrapper .mark-paid-btn {
+    margin-left: 5px;
+    padding: 4px 10px;
+}
+
+/* === MODALS (FIXED) === */
+.tracker-wrapper .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 2000;
+    backdrop-filter: blur(2px);
+    overflow-y: auto;
+    /* Allows scrolling if modal is tall */
+    padding: 10px;
+}
+
+.tracker-wrapper .modal-content {
+    background: white;
+    margin: 20px auto;
+    padding: 20px;
+    width: 100%;
+    max-width: 500px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    box-sizing: border-box;
+    /* Ensure padding is inside width */
+}
+
+.tracker-wrapper .modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+}
+
+.tracker-wrapper .modal-buttons button {
+    width: auto;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+/* === DASHBOARD GRID === */
+.tracker-wrapper .dashboard-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.tracker-wrapper .dashboard-grid>div {
+    flex: 1;
+    min-width: 300px;
+}

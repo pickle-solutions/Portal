@@ -1,0 +1,112 @@
+<div class="focus-container" id="focus-app-root">
+
+    <div class="focus-hud">
+        <div class="hud-stat-group">
+            <div class="hud-badge level-badge">
+                <small>LVL</small>
+                <span id="hud-level">1</span>
+            </div>
+            <div class="hud-bars">
+                <div class="bar-row">
+                    <span class="bar-label">HP</span>
+                    <div class="bar-track">
+                        <div id="hud-hp-bar" class="bar-fill hp-fill" style="width: 100%;"></div>
+                    </div>
+                </div>
+                <div class="bar-row">
+                    <span class="bar-label">XP</span>
+                    <div class="bar-track">
+                        <div id="hud-xp-bar" class="bar-fill xp-fill" style="width: 0%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="hud-currency-group">
+            <div class="currency-item" title="Gold (Spend in Armory)">
+                <span class="icon">🪙</span>
+                <span id="hud-gold">0</span>
+            </div>
+            <div class="currency-item" title="Day Streak">
+                <span class="icon">🔥</span>
+                <span id="hud-streak">0</span>
+            </div>
+        </div>
+
+        <div id="hud-buffs" class="hud-buffs"></div>
+
+        <div class="hud-actions">
+            <button id="btn-open-armory" class="hud-btn" title="Open Armory (Shop)">🛒</button>
+            <button id="btn-open-console" class="hud-btn" title="AI Command Terminal">📟</button>
+        </div>
+    </div>
+    <div class="focus-input-wrapper">
+        <input type="text" id="focus-quick-add" placeholder="New Intel / Brain Dump..." autocomplete="off">
+        <button id="focus-add-btn" class="add-btn">+</button>
+    </div>
+
+    <div id="inbox-section" class="is-hidden">
+        <div class="section-header">UNSORTED INTEL (Needs Orders)</div>
+        <div id="inbox-list" class="inbox-list"></div>
+    </div>
+
+    <div class="section-header">DAILY PROTOCOL (Resets 24h)</div>
+    <div id="protocol-list" class="protocol-grid"></div>
+
+    <div class="section-header">ZONE CONTROL (Biomes)</div>
+    <div id="biome-grid" class="biome-grid"></div>
+
+    <div class="section-header">DEADLINE MISSIONS</div>
+    <div id="mission-list" class="mission-list">
+        <div class="empty-state">No active deadlines. Sector clear.</div>
+    </div>
+
+</div>
+
+<div id="modal-tactical" class="focus-modal is-hidden">
+    <div class="modal-card tactical-card">
+        <div class="tactical-header">
+            <h2 id="tactical-biome-title">SECTOR COMMAND</h2>
+            <button class="close-modal-btn">&times;</button>
+        </div>
+        <div class="tactical-body">
+            <p>Commander, identify your target. Here are 3 recommended options:</p>
+            <div id="tactical-options" class="tactical-options-list"></div>
+            <div class="tactical-actions">
+                <button id="btn-tactical-refresh" class="secondary-btn">🎲 Reroll Intel</button>
+                <button id="btn-tactical-add" class="secondary-btn">+ Add New Task</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modal-console" class="focus-modal is-hidden">
+    <div class="modal-card console-card">
+        <h2>📟 DRILL SERGEANT TERMINAL</h2>
+        <div class="console-screen">
+            <p class="console-text">> SYSTEM READY.</p>
+            <p class="console-text">> 1. COPY BRIEFING (Includes Inbox)</p>
+            <p class="console-text">> 2. PASTE AI ORDERS TO SORT INBOX</p>
+        </div>
+        <textarea id="console-input" placeholder="Paste AI response here..."></textarea>
+        <div class="console-actions">
+            <button id="btn-copy-brief" class="action-btn">📋 Copy Briefing</button>
+            <button id="btn-run-parse" class="primary-btn">🚀 Execute Orders</button>
+        </div>
+    </div>
+</div>
+
+<div id="modal-armory" class="focus-modal is-hidden">
+    <div class="modal-card armory-card">
+        <h2>🛒 THE ARMORY</h2>
+        <p>Spend Gold on Upgrades & Themes.</p>
+        <div id="armory-grid" class="armory-grid"></div>
+        <button class="close-modal-btn footer-close">Close</button>
+    </div>
+</div>
+
+<script>
+    if (typeof initFocusModule === 'function') {
+        initFocusModule();
+    }
+</script>

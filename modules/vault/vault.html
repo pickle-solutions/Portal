@@ -1,0 +1,71 @@
+<div id="login-view">
+    <h2>My Secure Vault</h2>
+    <p>Enter your Master Password to create or unlock your vault.</p>
+    <input type="password" id="master-password" placeholder="Master Password">
+    <p>If unlocking, select your encrypted vault file:</p>
+    <input type="file" id="vault-file-input" accept=".json">
+    <button id="unlock-btn">Unlock / Create New</button>
+    <p id="login-error" class="error"></p>
+</div>
+<div id="vault-view" style="display: none;">
+    <div class="header-bar">
+        <h2>Vault Unlocked</h2>
+        <button id="save-and-lock-btn">Save & Lock Vault</button>
+    </div>
+    <hr>
+    <h3>Add New Account</h3>
+    <form id="add-account-form">
+        <input type="text" id="acc-website" placeholder="Website URL (e.g., google.com)" required>
+        <input type="text" id="acc-username" placeholder="Username (Optional)">
+        <label>Account Emails:</label>
+        <div id="email-inputs-container">
+            <div class="email-input-group">
+                <input type="email" class="acc-email" placeholder="Account Email" required>
+                <button type="button" class="remove-email-btn" style="display: none;">Remove</button>
+            </div>
+        </div>
+        <button type="button" id="add-email-btn">Add Another Email</button>
+        <label for="acc-password">Password:</label>
+        <div class="password-generator">
+            <input type="password" id="acc-password" placeholder="Password (Optional)">
+            <button type="button" class="toggle-form-pass" data-target="acc-password">👁️</button>
+            <button type="button" id="generate-pass-btn">Generate</button>
+        </div>
+        <textarea id="acc-note" placeholder="Notes (e.g., security question answer)"></textarea>
+        <button type="submit">Add Account</button>
+    </form>
+    <hr>
+    <div class="header-bar">
+        <h3>My Accounts</h3>
+        <button id="export-csv-btn">Export to CSV (Reference)</button>
+    </div>
+    <input type="text" id="search-bar" placeholder="Search accounts...">
+    <div id="account-list"></div>
+</div>
+<div id="edit-modal-backdrop" style="display: none;">
+    <div id="edit-modal">
+        <h3>Edit Account</h3>
+        <form id="edit-account-form">
+            <input type="hidden" id="edit-acc-index">
+            <label for="edit-acc-website">Website URL:</label>
+            <input type="text" id="edit-acc-website" required>
+            <label for="edit-acc-username">Username:</label>
+            <input type="text" id="edit-acc-username">
+            <label>Account Emails:</label>
+            <div id="edit-email-inputs-container"></div>
+            <button type="button" id="edit-add-email-btn">Add Another Email</button>
+            <label for="edit-acc-password">Password:</label>
+            <div class="password-generator">
+                <input type="password" id="edit-acc-password" placeholder="Password (Optional)">
+                <button type="button" class="toggle-form-pass" data-target="edit-acc-password">👁️</button>
+                <button type="button" id="edit-generate-pass-btn">Generate</button>
+            </div>
+            <label for="edit-acc-note">Note:</label>
+            <textarea id="edit-acc-note"></textarea>
+            <div class="modal-buttons">
+                <button type="submit" id="save-edit-btn">Save Changes</button>
+                <button type="button" id="cancel-edit-btn">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>

@@ -1,0 +1,81 @@
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: #f0f2f5;
+    color: #333;
+    margin: 0;
+    padding: 20px;
+}
+* {
+    box-sizing: border-box;
+}
+.header {
+    text-align: center;
+    margin-bottom: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+.header h1 {
+    color: #2E7D32;
+    margin: 0;
+}
+#home-btn {
+    position: absolute;
+    left: 0;
+    font-size: 16px;
+    padding: 8px 12px;
+    background-color: #6c757d;
+    border: none;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+}
+#home-btn:hover {
+    background-color: #5a6268;
+}
+.app-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 20px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+.app-grid.is-hidden {
+    display: none;
+}
+.app-icon, .app-icon-disabled {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    padding: 20px;
+    text-align: center;
+    font-weight: 600;
+    text-decoration: none;
+    color: #333;
+    transition: transform 0.2s ease-in-out;
+}
+.app-icon {
+    cursor: pointer;
+}
+.app-icon:hover {
+    transform: translateY(-5px);
+}
+.app-icon-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.icon-placeholder {
+    font-size: 3em;
+    margin-bottom: 10px;
+    height: 72px; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.app-icon-img {
+    width: 72px;
+    height: 72px;
+    object-fit: contain;
+    margin-bottom: 10px;
+}

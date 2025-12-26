@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal</title>
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2E7D32">
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="header">
+        <button id="home-btn" style="display: none;">&larr; Back to Portal</button>
+        <h1>Portal</h1>
+    </div>
+
+    <div id="app-grid" class="app-grid">
+        <div class="app-icon" id="launch-vault">
+            <img class="app-icon-img" src="modules/vault/vault-icon.png" alt="Secure Vault">
+            <span>Secure Vault</span>
+        </div>
+
+        <div class="app-icon" id="launch-tracker">
+            <div class="icon-placeholder">⏱️</div>
+            <span>Time Tracker</span>
+        </div>
+
+        <div class="app-icon" id="launch-lister">
+            <div class="icon-placeholder">🏷️</div>
+            <span>Item Lister</span>
+        </div>
+        <div class="app-icon" id="launch-focus">
+            <div class="icon-placeholder">🧠</div>
+            <span>Focus Mode</span>
+        </div>
+
+        <div class="app-icon-disabled">
+            <div class="icon-placeholder">📝</div>
+            <span>Notes (Coming Soon)</span>
+        </div>
+
+    </div>
+
+    <div id="app-content"></div>
+
+
+    <script src="app.js"></script>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful: ', registration.scope);
+                    })
+                    .catch(err => {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,410 @@
+<div class="lister-container">
+
+    <div id="lister-toast">Notification</div>
+
+    <div id="lister-list-view">
+        <div class="lister-header">
+            <h2>My Items</h2>
+            <div class="lister-header-actions">
+                <button id="lister-add-new-btn" class="lister-btn-primary">+ New Item</button>
+                <button id="lister-stats-btn" class="lister-btn" style="border-color:#6f42c1; color:#6f42c1;">📊
+                    Stats</button>
+
+                <button id="lister-select-all-btn" class="lister-btn">Select All</button>
+                <button id="lister-create-bundle-btn" class="lister-btn-primary is-hidden">Create Bundle</button>
+
+                <button id="lister-csv-btn" class="lister-btn">Export CSV</button>
+                <button id="lister-import-btn" class="lister-btn">Import</button>
+                <button id="lister-export-split-btn" class="lister-btn">Export (Split)</button>
+
+                <button id="lister-autosave-btn" class="lister-btn" style="border-color: #28a745; color: #28a745;">🔴
+                    Enable Auto-Save</button>
+                <button id="lister-delete-all-btn" class="lister-btn-danger" title="Delete All Items">Clear All</button>
+            </div>
+        </div>
+
+        <input type="file" id="lister-import-file-input" class="is-hidden" accept="application/json" multiple>
+
+        <div class="lister-filters-bar">
+            <input type="search" id="lister-search" class="lister-input" placeholder="Search items...">
+
+            <select id="lister-filter-status" class="lister-input">
+                <option value="">All Statuses</option>
+                <option value="Draft">Draft</option>
+                <option value="Active">Active</option>
+                <option value="Pending">Pending</option>
+                <option value="Sold">Sold</option>
+                <option value="Returned">Returned</option>
+                <option value="Donated">Donated</option>
+                <option value="Damaged">Damaged/Lost</option>
+                <option value="Inventory">Inventory (Not For Sale)</option>
+                <option value="Archived">Archived</option>
+            </select>
+
+            <select id="lister-filter-category" class="lister-input">
+                <option value="">All Categories</option>
+            </select>
+
+            <label class="toggle-wrapper" title="Switch between List View and Folder View">
+                <div class="toggle-switch">
+                    <input type="checkbox" id="lister-group-toggle">
+                    <span class="slider"></span>
+                </div>
+                <span class="toggle-label">Group Views</span>
+            </label>
+        </div>
+
+        <div id="lister-item-list"></div>
+
+        <template id="lister-item-template">
+            <div class="lister-item-card">
+                <input type="checkbox" class="lister-item-checkbox">
+                <img class="lister-item-thumbnail" src="" alt="Item thumbnail">
+
+                <div class="lister-item-card-content">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <h3 class="lister-item-title"></h3>
+                        <span class="lister-item-status status-badge"></span>
+                    </div>
+                    <div class="lister-item-meta">
+                        <span class="lister-item-category"></span>
+                        <span>•</span>
+                        <span class="lister-item-price"></span>
+                    </div>
+                    <div class="lister-at-a-glance-listings platform-pills"></div>
+                </div>
+
+                <div class="lister-card-actions">
+                    <button class="lister-btn-primary lister-post-btn" title="Post">🚀 Post</button>
+                    <button class="lister-btn lister-sold-btn" title="Mark Sold">$</button>
+                    <button class="icon-btn lister-edit-btn" title="Edit"
+                        style="border:none; background:none; font-size:18px;">✏️</button>
+                    <button class="icon-btn lister-delete-btn delete" title="Delete"
+                        style="border:none; background:none; font-size:18px;">🗑️</button>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <div id="lister-sold-modal" class="lister-modal-overlay is-hidden">
+        <div class="lister-modal">
+            <div class="lister-modal-header">
+                <h3>Mark as Sold</h3>
+                <button id="lister-sold-modal-close-btn"
+                    style="background:none; border:none; font-size:24px; cursor:pointer; line-height:1;">&times;</button>
+            </div>
+            <div class="lister-modal-content">
+                <input type="hidden" id="lister-sold-item-id">
+                <div class="form-group">
+                    <label>Sold Price</label>
+                    <input type="number" id="lister-sold-modal-price" class="lister-input" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>Private Notes (optional)</label>
+                    <textarea id="lister-sold-modal-notes" class="lister-textarea" rows="4"></textarea>
+                </div>
+            </div>
+            <div class="lister-modal-footer">
+                <button id="lister-sold-modal-save-btn" class="lister-btn-primary">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="lister-form-view" class="is-hidden">
+        <form id="lister-item-form">
+            <input type="hidden" id="lister-item-id">
+            <div class="lister-form-header">
+                <h2 id="lister-form-title">Add New Item</h2>
+                <label class="sourcing-toggle-wrapper">
+                    <span style="font-size:14px; margin-right:8px; font-weight:bold;">⚡ Sourcing Mode</span>
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="lister-sourcing-toggle">
+                        <span class="slider"></span>
+                    </div>
+                </label>
+            </div>
+
+            <div class="form-group">
+                <label>Title</label>
+                <input type="text" id="lister-title" class="lister-input" placeholder="What are you selling?" required>
+            </div>
+
+            <div class="form-group">
+                <label>Photos</label>
+                <div id="lister-photo-dropzone" class="lister-dropzone">
+                    <input type="file" id="lister-photo-input" multiple accept="image/*">
+                    <p>Click to Select, Drag & Drop, or Paste (Ctrl+V)</p>
+                </div>
+                <div id="lister-photo-preview-gallery" style="display:flex; flex-wrap:wrap; gap:10px; margin-top:10px;">
+                </div>
+            </div>
+
+            <label>Description
+                <button type="button" id="lister-ai-btn" class="ai-prompt-btn" style="float:right;">🤖 Copy AI
+                    Prompt</button>
+            </label>
+            <textarea id="lister-description" class="lister-input" rows="5"></textarea>
+
+            <div class="form-group-row">
+                <div class="form-group" style="flex:0.5;">
+                    <label>Qty</label>
+                    <input type="number" id="lister-quantity" value="1" min="0">
+                </div>
+                <div class="form-group"><label>Cost</label><input type="number" id="lister-cost" step="0.01"></div>
+                <div class="form-group"><label>Price</label><input type="number" id="lister-price" step="0.01"></div>
+                <div class="form-group is-hidden" id="lister-sold-price-group">
+                    <label>Sold For</label><input type="number" id="lister-sold-price" step="0.01">
+                </div>
+            </div>
+
+            <div class="form-group-row">
+                <div class="form-group"><label>Brand</label><input type="text" id="lister-brand"></div>
+                <div class="form-group"><label>Size</label><input type="text" id="lister-size"></div>
+            </div>
+
+            <div class="form-group-row">
+                <div class="form-group"><label>Category</label><input type="text" id="lister-category"></div>
+                <div class="form-group">
+                    <label>Condition</label>
+                    <select id="lister-condition">
+                        <option value="new">New (Sealed)</option>
+                        <option value="open_box">Open Box</option>
+                        <option value="like_new">Like New</option>
+                        <option value="good">Used - Good</option>
+                        <option value="fair">Used - Fair</option>
+                        <option value="parts">For Parts / Not Working</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="lister-status">
+                        <option value="Draft">Draft</option>
+                        <option value="Active">Active</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Sold">Sold</option>
+                        <option value="Returned">Returned</option>
+                        <option value="Donated">Donated</option>
+                        <option value="Damaged">Damaged/Lost</option>
+                        <option value="Inventory">Inventory (Not For Sale)</option>
+                        <option value="Archived">Archived</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group-row">
+                <div class="form-group" style="flex:1;">
+                    <label>Tags</label>
+                    <input type="text" id="lister-tags" placeholder="comma, separated">
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label>Storage Location</label>
+                    <input type="text" id="lister-location" placeholder="Bin A, Shelf 2...">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Private Notes</label>
+                <textarea id="lister-notes" rows="5" placeholder="Internal notes..."></textarea>
+            </div>
+
+            <div class="lister-form-actions">
+                <button type="button" id="lister-cancel-btn" class="lister-btn">Cancel</button>
+                <button type="submit" class="lister-btn-primary">Save Item</button>
+            </div>
+        </form>
+    </div>
+
+</div>
+
+<div id="lister-posting-modal" class="lister-modal-overlay is-hidden">
+    <div class="lister-modal">
+        <div class="lister-modal-header">
+            <h3 id="lister-modal-title">Post to...</h3>
+            <button id="lister-modal-close-btn"
+                style="background:none; border:none; font-size:24px; cursor:pointer; line-height:1;">&times;</button>
+        </div>
+
+        <div class="lister-modal-content">
+            <div id="lister-profit-box" class="profit-display-box" style="margin-bottom: 15px;">
+                <span>Cost: <span id="lister-modal-cost">$0.00</span></span>
+                <span>Est. Profit: <span id="lister-modal-profit">$0.00</span></span>
+            </div>
+            <div style="margin-bottom:20px; background:#f9f9f9; padding:10px; border-radius:6px;">
+                <label style="margin-bottom:5px; display:block;">1. Photos (Click to Copy / Drag to FB)</label>
+                <div id="lister-modal-photo-gallery"></div>
+            </div>
+
+            <div class="lister-copy-group">
+                <label>Title</label>
+                <div class="lister-copy-wrapper">
+                    <input type="text" id="lister-copy-title">
+                    <button class="lister-btn lister-copy-btn" data-copy-target="lister-copy-title">Copy</button>
+                </div>
+            </div>
+            <div class="form-group-row">
+                <div class="lister-copy-group" style="flex:1;">
+                    <label>Brand</label>
+                    <div class="lister-copy-wrapper">
+                        <input type="text" id="lister-copy-brand">
+                        <button class="lister-btn lister-copy-btn" data-copy-target="lister-copy-brand">Copy</button>
+                    </div>
+                </div>
+                <div class="lister-copy-group" style="flex:1;">
+                    <label>Size</label>
+                    <div class="lister-copy-wrapper">
+                        <input type="text" id="lister-copy-size">
+                        <button class="lister-btn lister-copy-btn" data-copy-target="lister-copy-size">Copy</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group-row">
+                <div class="lister-copy-group" style="flex:1;">
+                    <label>Price</label>
+                    <div class="lister-copy-wrapper">
+                        <input type="text" id="lister-copy-price">
+                        <button class="lister-btn lister-copy-btn" data-copy-target="lister-copy-price">Copy</button>
+                    </div>
+                </div>
+                <div class="lister-copy-group" style="flex:1;">
+                    <label>Condition</label>
+                    <select id="lister-copy-condition" style="width:100%; padding:10px;">
+                        <option value="new">New (Sealed)</option>
+                        <option value="open_box">Open Box</option>
+                        <option value="like_new">Like New</option>
+                        <option value="good">Used - Good</option>
+                        <option value="fair">Used - Fair</option>
+                        <option value="parts">For Parts / Not Working</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="lister-copy-group">
+                <label>Category (Ref)</label>
+                <input type="text" id="lister-copy-category">
+            </div>
+
+            <div class="form-group-row">
+                <div class="lister-copy-group" style="flex:1;">
+                    <label>Tags</label>
+                    <input type="text" id="lister-copy-tags">
+                </div>
+                <div class="lister-copy-group" style="flex:1;">
+                    <label>Location</label>
+                    <input type="text" id="lister-copy-location">
+                </div>
+            </div>
+
+            <div class="lister-copy-group">
+                <label>Description</label>
+                <div class="lister-copy-wrapper">
+                    <textarea id="lister-copy-description" rows="6"></textarea>
+                    <button class="lister-btn lister-copy-btn" data-copy-target="lister-copy-description">Copy</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="lister-modal-footer">
+            <div class="footer-left">
+                <button id="lister-save-edits-btn" class="lister-btn-ghost">Save Edits</button>
+            </div>
+            <div class="footer-center">
+                <button id="lister-copy-data-btn" class="lister-btn-primary">📋 Copy Data</button>
+                <div class="lister-dropdown-wrapper">
+                    <button id="lister-marketplace-btn" class="lister-btn lister-btn-primary">
+                        🚀 Open Marketplace ▾
+                    </button>
+                    <div id="lister-marketplace-menu" class="lister-dropdown-menu is-hidden">
+                        <a href="https://www.facebook.com/marketplace/create/item" target="_blank"
+                            rel="noopener noreferrer" class="dropdown-item">Facebook</a>
+                        <a href="https://poshmark.ca/create-listing" target="_blank" rel="noopener noreferrer"
+                            class="dropdown-item">Poshmark CA</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-right">
+                <div class="lister-input-group">
+                    <input type="url" id="lister-listing-url" placeholder="Paste Link...">
+                    <button id="lister-mark-listed-btn" class="lister-btn-primary">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="lister-stats-modal" class="lister-modal-overlay is-hidden">
+    <div class="lister-modal" style="max-width: 600px;">
+        <div class="lister-modal-header">
+            <h3>Business Dashboard</h3>
+            <button id="lister-stats-close-btn"
+                style="background:none; border:none; font-size:24px; cursor:pointer;">&times;</button>
+        </div>
+        <div class="lister-modal-content">
+            <div class="stats-grid">
+                <div class="stat-card" style="border-left: 5px solid #28a745;">
+                    <h4>Net Profit</h4>
+                    <span class="stat-sub">Money in your pocket (Lifetime)</span>
+                    <span id="stat-net-profit" class="stat-number">$0.00</span>
+                </div>
+                <div class="stat-card" style="border-left: 5px solid #17a2b8;">
+                    <h4>Total Sales (Gross)</h4>
+                    <span class="stat-sub">Total revenue received</span>
+                    <span id="stat-total-sales" class="stat-number">$0.00</span>
+                </div>
+
+                <div class="stat-card" style="border-left: 5px solid #6610f2;">
+                    <h4>Cost of Goods Sold</h4>
+                    <span class="stat-sub">Cost of items that sold</span>
+                    <span id="stat-cost-sold" class="stat-number">$0.00</span>
+                </div>
+                <div class="stat-card" style="border-left: 5px solid #6610f2;">
+                    <h4>Items Sold</h4>
+                    <span class="stat-sub">Total Sold (Active + Archived)</span>
+                    <span id="stat-count-sold" class="stat-number">0</span>
+                </div>
+
+                <div class="stat-card" style="border-left: 5px solid #fd7e14;">
+                    <h4>Unsold Inventory Value</h4>
+                    <span class="stat-sub">Cost of items left to sell</span>
+                    <span id="stat-inventory-cost" class="stat-number">$0.00</span>
+                </div>
+                <div class="stat-card" style="border-left: 5px solid #fd7e14;">
+                    <h4>Items Left</h4>
+                    <span class="stat-sub">Active + Draft + Inv + Pending</span>
+                    <span id="stat-count-left" class="stat-number">0</span>
+                </div>
+
+                <div class="stat-card" style="border-left: 5px solid #6c757d;">
+                    <h4>Total Spend (All Time)</h4>
+                    <span class="stat-sub">Total Invested (Sold + Unsold)</span>
+                    <span id="stat-total-spend" class="stat-number">$0.00</span>
+                </div>
+                <div class="stat-card" style="border-left: 5px solid #6c757d;">
+                    <h4>Total Items (All Time)</h4>
+                    <span class="stat-sub">Total processed items</span>
+                    <span id="stat-total-count" class="stat-number">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="lister-footer-status">
+        <span id="lister-app-version">Ver: 1.0</span>
+        <span class="footer-divider">•</span>
+        <span id="lister-last-backup">Last Backup: Never</span>
+    </div>
+
+</div>
+<div id="lister-posting-modal" class="lister-modal-overlay is-hidden">
+</div>
+
+<div id="lister-stats-modal" class="lister-modal-overlay is-hidden">
+    <div class="lister-modal" style="max-width: 600px;">
+        <div class="lister-modal-header">
+            <h3>Business Dashboard</h3>
+            <button id="lister-stats-close-btn"
+                style="background:none; border:none; font-size:24px; cursor:pointer;">&times;</button>
+        </div>
+        <div class="lister-modal-content">
+        </div>
+    </div>
+</div>

@@ -1,0 +1,325 @@
+<div class="tracker-wrapper">
+    <div class="container">
+        <div class="header">
+            <h1>Pickle Solutions Inc.</h1>
+        </div>
+        <h2>Time Tracker</h2>
+
+        <div class="tracker-tabs">
+            <button class="tab-btn active" data-tab="tab-tracker">⏱️ Tracker & Logs</button>
+            <button class="tab-btn" data-tab="tab-manage">⚙️ Management</button>
+            <button class="tab-btn" data-tab="tab-invoices">📄 Invoices</button>
+        </div>
+
+        <div id="tab-tracker" class="tab-content active">
+            <div class="card">
+                <h2>Live Timer</h2>
+                <div id="timer-display">00:00:00</div>
+
+                <div class="settings-group">
+                    <div class="setting-item">
+                        <label for="timer-client">Client</label>
+                        <select id="timer-client">
+                            <option value="none">No Client</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label for="timer-project">Project</label>
+                        <select id="timer-project">
+                            <option value="none">No Project</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <div class="setting-item">
+                        <label for="timer-category">Category</label>
+                        <input type="text" id="timer-category" placeholder="e.g., Dev, Meeting...">
+                    </div>
+                    <div class="setting-item" style="padding-top: 28px;">
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="timer-billable" checked>
+                            <label for="timer-billable">Billable</label>
+                        </div>
+                    </div>
+                </div>
+
+                <label for="timer-notes">Description (Client Facing)</label>
+                <textarea id="timer-notes" placeholder="What are you working on?" rows="2"></textarea>
+
+                <label for="timer-private-notes">Private Notes (Internal)</label>
+                <textarea id="timer-private-notes" class="is-hidden" rows="2"></textarea>
+
+                <button id="start-stop-btn" class="primary-btn">Start Timer</button>
+
+                <div style="text-align: center; margin-top: 10px;">
+                    <button id="show-manual-entry-btn" class="outline-btn small-btn" style="width: auto;">+ Add Manual
+                        Entry</button>
+                </div>
+
+                <div id="manual-entry-container" class="is-hidden"
+                    style="margin-top: 20px; border-top: 1px dashed #eee; padding-top: 20px;">
+                    <h3>Manual Entry</h3>
+                    <form id="manual-form">
+                        <div class="settings-group">
+                            <div class="setting-item"><label>Client</label><select id="manual-client">
+                                    <option value="none">No Client</option>
+                                </select></div>
+                            <div class="setting-item"><label>Project</label><select id="manual-project">
+                                    <option value="none">No Project</option>
+                                </select></div>
+                        </div>
+                        <div class="duration-group">
+                            <div>
+                                <label>Duration</label>
+                                <div class="duration-group">
+                                    <input type="number" id="manual-hours" placeholder="Hrs" min="0">
+                                    <input type="number" id="manual-minutes" placeholder="Mins" min="0" max="59">
+                                </div>
+                            </div>
+                            <div style="flex-basis: 50%;">
+                                <label>Date</label>
+                                <input type="date" id="manual-date">
+                            </div>
+                        </div>
+                        <input type="text" id="manual-category" placeholder="Category">
+                        <textarea id="manual-notes" placeholder="Description" rows="2"></textarea>
+                        <textarea id="manual-private-notes" placeholder="Private Notes" rows="2"></textarea>
+                        <div class="checkbox-container">
+                            <input type="checkbox" id="manual-billable"> <label for="manual-billable">Billable</label>
+                        </div>
+                        <button type="submit" class="primary-btn">Save Entry</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Time Log</h2>
+
+                <div class="totals-summary">
+                    <div class="total-item">
+                        <span>Unbilled</span>
+                        <strong id="total-billable-cost" class="total-cost">$0.00</strong>
+                    </div>
+                    <div class="total-item">
+                        <span>Non-Billable</span>
+                        <strong id="total-non-billable">0h 0m</strong>
+                    </div>
+                    <div class="total-item grand-total">
+                        <span>Total Time</span>
+                        <strong id="total-all">0h 0m</strong>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <input type="search" id="search-bar" placeholder="Search logs...">
+                    <input type="date" id="filter-start-date">
+                    <input type="date" id="filter-end-date">
+                    <label style="display:flex; align-items:center; gap:5px; cursor:pointer; font-weight:normal;">
+                        <input type="checkbox" id="filter-hide-billed"> Hide Billed
+                    </label>
+                    <button id="filter-clear-btn" class="outline-btn small-btn">Clear</button>
+                </div>
+
+                <div class="log-actions-header">
+                    <button id="export-csv-btn" class="outline-btn small-btn">Export CSV</button>
+                    <button id="clear-data-btn" class="danger-btn small-btn">Reset Data</button>
+                </div>
+
+                <div id="time-log-container"></div>
+            </div>
+        </div>
+
+        <div id="tab-manage" class="tab-content">
+            <div class="card">
+                <h2>Dashboard Charts</h2>
+                <div class="dashboard-grid">
+                    <div class="chart-container">
+                        <h3>Unbilled Revenue</h3>
+                        <canvas id="client-bar-chart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h3>Time Distribution</h3>
+                        <canvas id="category-pie-chart"></canvas>
+                    </div>
+                </div>
+                <div class="summary-group" style="margin-top: 20px;">
+                    <div class="totals-by-client" id="totals-by-client"></div>
+                    <div class="totals-by-category" id="totals-by-category"></div>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <div style="flex: 1; min-width: 300px;">
+                    <div class="card">
+                        <h2>Clients</h2>
+                        <form id="add-client-form" class="client-form">
+                            <input type="text" id="new-client-name" placeholder="Client Name" required>
+                            <textarea id="new-client-address" placeholder="Address" rows="2"></textarea>
+                            <button type="submit" class="primary-btn">+</button>
+                        </form>
+                        <ul id="client-list"></ul>
+                    </div>
+                </div>
+
+                <div style="flex: 1; min-width: 300px;">
+                    <div class="card">
+                        <h2>Projects</h2>
+                        <form id="add-project-form" class="project-form">
+                            <select id="project-client-select" required>
+                                <option value="">Select Client</option>
+                            </select>
+                            <input type="text" id="new-project-name" placeholder="Project Name" required>
+                            <div class="budget-group">
+                                <input type="number" id="project-budget-amount" placeholder="Budget" min="0">
+                                <select id="project-budget-type">
+                                    <option value="none">No Budget</option>
+                                    <option value="hours">Hrs</option>
+                                    <option value="dollars">$</option>
+                                </select>
+                            </div>
+                            <input type="number" id="project-rate" placeholder="Rate Override" min="0" step="0.01">
+                            <button type="submit" class="primary-btn">Add Project</button>
+                        </form>
+                        <ul id="project-list"></ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Global Settings</h2>
+                <div class="settings-group">
+                    <div class="setting-item">
+                        <label>Default Rate ($)</label>
+                        <input type="number" id="hourly-rate" step="0.01">
+                    </div>
+                    <div class="setting-item">
+                        <label>Business Number</label>
+                        <input type="text" id="business-number">
+                    </div>
+                </div>
+                <div class="log-actions-header" style="margin-top:15px; border-top:1px solid #eee; padding-top:15px;">
+                    <button id="import-data-btn" class="sync-btn">Import JSON</button>
+                    <button id="export-data-btn" class="sync-btn">Export JSON</button>
+                    <input type="file" id="import-file-input" accept=".json" style="display: none;">
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-invoices" class="tab-content">
+            <div class="card">
+                <h2>Invoice History</h2>
+                <div style="text-align: right; margin-bottom: 15px;">
+                    <button id="generate-invoice-btn" class="primary-btn" style="width: auto;">+ New Invoice</button>
+                </div>
+                <ul id="invoice-list"></ul>
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Edit Entry</h2>
+            <form id="edit-form">
+                <input type="hidden" id="edit-entry-id">
+                <div class="settings-group">
+                    <div class="setting-item"><label>Client</label><select id="edit-client"></select></div>
+                    <div class="setting-item"><label>Project</label><select id="edit-project"></select></div>
+                </div>
+                <div class="duration-group">
+                    <div class="duration-group">
+                        <input type="number" id="edit-hours" placeholder="Hrs" min="0">
+                        <input type="number" id="edit-minutes" placeholder="Mins" min="0" max="59">
+                    </div>
+                    <input type="date" id="edit-date">
+                </div>
+                <input type="number" id="edit-override-cost" placeholder="Override Cost ($)" min="0" step="0.01">
+                <input type="text" id="edit-category" placeholder="Category">
+                <textarea id="edit-notes" rows="3" placeholder="Description"></textarea>
+                <textarea id="edit-private-notes" rows="2" placeholder="Private Notes"></textarea>
+                <div class="checkbox-container">
+                    <input type="checkbox" id="edit-billable"> <label for="edit-billable">Billable</label>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" id="cancel-edit-btn" class="outline-btn">Cancel</button>
+                    <button type="submit" class="primary-btn">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="invoice-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Generate Invoice</h2>
+            <form id="invoice-client-form">
+                <label>Select Client</label>
+                <select id="invoice-client-select" required></select>
+                <div class="modal-buttons">
+                    <button type="button" id="cancel-invoice-btn" class="outline-btn">Cancel</button>
+                    <button type="submit" class="primary-btn">Generate</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="client-edit-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Edit Client</h2>
+            <form id="client-edit-form">
+                <input type="hidden" id="edit-client-id">
+                <input type="text" id="edit-client-name" required placeholder="Name">
+                <textarea id="edit-client-address" rows="3" placeholder="Address"></textarea>
+                <div class="modal-buttons">
+                    <button type="button" id="cancel-client-edit-btn" class="outline-btn">Cancel</button>
+                    <button type="submit" class="primary-btn">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="project-edit-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Edit Project</h2>
+            <form id="project-edit-form">
+                <input type="hidden" id="edit-project-id">
+                <select id="edit-project-client-select" required></select>
+                <input type="text" id="edit-project-name" required placeholder="Project Name">
+                <div class="budget-group">
+                    <input type="number" id="edit-project-budget-amount" placeholder="Budget">
+                    <select id="edit-project-budget-type">
+                        <option value="none">No Budget</option>
+                        <option value="hours">Hrs</option>
+                        <option value="dollars">$</option>
+                    </select>
+                </div>
+                <input type="number" id="edit-project-rate" placeholder="Rate Override" min="0" step="0.01">
+                <div class="modal-buttons">
+                    <button type="button" id="cancel-project-edit-btn" class="outline-btn">Cancel</button>
+                    <button type="submit" class="primary-btn">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="split-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Split Entry</h2>
+            <form id="split-form">
+                <input type="hidden" id="split-entry-id">
+                <div class="split-details">
+                    <p><strong>Original:</strong> <span id="split-original-notes"></span></p>
+                    <p><strong>Total:</strong> <span id="split-original-duration"></span></p>
+                </div>
+                <label>Billable Portion:</label>
+                <div class="duration-group">
+                    <input type="number" id="split-hours" placeholder="Hours" min="0">
+                    <input type="number" id="split-minutes" placeholder="Minutes" min="0">
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" id="cancel-split-btn" class="outline-btn">Cancel</button>
+                    <button type="submit" class="primary-btn">Split</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
