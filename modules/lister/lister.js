@@ -47,9 +47,9 @@ function initListerModule() {
         window.listerGlobalListenersAttached = true;
     }
 
-    // --- UUID HELPER ---
+    // --- UUID HELPER (Timestamp + Random) ---
     function generateUUID() {
-        return self.crypto.randomUUID();
+        return `${Date.now()}-${self.crypto.randomUUID()}`;
     }
 
     // --- 2. DATABASE ---
@@ -205,40 +205,36 @@ function initListerModule() {
             // FIX: Filter out Hidden items (Bundle Children) so counts match UI
             const visibleItems = items.filter(i => !i.isHidden);
 
-            // UPDATED HEADERS: Added "Sold Price" and "Location"
-            const headers = ["Title", "Status", "Price", "Sold Price", "Cost", "Profit", "Category", "Location", "Condition", "Tags", "Date Listed"];
+            // UPDATED HEADERS: Added Invoice, Retail, etc.
+            const headers = ["Title", "Status", "List Price", "Sold Price", "Cost", "Retail", "Profit", "Category", "Location", "Condition", "Invoice #", "Tags", "Date Listed"];
 
             const rows = visibleItems.map(item => {
                 const esc = (t) => `"${(t || '').toString().replace(/"/g, '""')}"`;
 
-                // Calculate Profit for CSV
                 const price = parseFloat(item.price) || 0;
                 const cost = parseFloat(item.cost) || 0;
                 const soldPrice = parseFloat(item.soldPrice) || 0;
+                const retail = parseFloat(item.retailPrice) || 0; // NEW
 
-                // Calculate Profit for CSV
                 let profit = 0;
-
                 if (item.status === 'Sold') {
-                    // REALIZED Profit (Sold Price - Cost)
                     profit = soldPrice - cost;
-                } else {
-                    // UNSOLD: Show 0 (or leave empty) so it doesn't mess up your spreadsheet sums
-                    profit = 0;
                 }
 
                 return [
                     esc(item.title),
                     esc(item.status),
                     price.toFixed(2),
-                    soldPrice > 0 ? soldPrice.toFixed(2) : "", // Only show sold price if it exists
+                    soldPrice > 0 ? soldPrice.toFixed(2) : "",
                     cost.toFixed(2),
+                    retail > 0 ? retail.toFixed(2) : "", // NEW: Retail Column
                     profit.toFixed(2),
                     esc(item.category),
-                    esc(item.location), // NEW: Storage Location
+                    esc(item.location),
                     esc(item.condition),
+                    esc(item.invoiceNum), // NEW: Invoice Column
                     esc(item.tags),
-                    new Date().toLocaleDateString()
+                    new Date(item.dateCreated || Date.now()).toLocaleDateString()
                 ].join(',');
             });
 
@@ -247,10 +243,23 @@ function initListerModule() {
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.href = url; link.download = `inventory_${new Date().toISOString().slice(0, 10)}.csv`;
-            document.body.appendChild(link); link.click(); document.body.removeChild(link);
-            markBackupComplete();
-            showToast("CSV Exported!");
-        } catch (e) { console.error(e); showToast("Export Failed"); }
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            // Separate the UI update so it doesn't crash the export if it fails
+            try {
+                markBackupComplete();
+                showToast("CSV Exported!");
+            } catch (uiErr) {
+                console.error("Backup timestamp failed:", uiErr);
+                showToast("Exported (Time not saved)");
+            }
+
+        } catch (e) {
+            console.error("CSV CRASH:", e);
+            alert("Export Error: " + e.message); // Show us the real error
+        }
     }
     // --- STATS LOGIC (ULTIMATE VERSION) ---
     async function openStatsModal() {
@@ -377,10 +386,12 @@ function initListerModule() {
                             ...item,
                             photos,
                             price: parseFloat(item.price) || 0,
-                            cost: parseFloat(item.cost) || 0
+                            cost: parseFloat(item.cost) || 0,
+                            retailPrice: parseFloat(item.retailPrice) || 0, // Import Retail
+                            invoiceNum: item.invoiceNum || '' // Import Invoice
                         };
 
-                        // Ensure UUID exists
+                        // If imported item has no UUID, generate one now to prevent future issues
                         if (!newItem.uuid) newItem.uuid = generateUUID();
 
                         const normalizedTitle = item.title.toLowerCase().trim();
@@ -837,6 +848,9 @@ function initListerModule() {
             document.getElementById('lister-cost').value = item.cost;
             document.getElementById('lister-quantity').value = item.quantity || 1;
             document.getElementById('lister-price').value = item.price;
+            // --- NEW FIELDS ---
+            document.getElementById('lister-retail-price').value = item.retailPrice || '';
+            document.getElementById('lister-invoice-num').value = item.invoiceNum || '';
 
             // NEW: SHOW SOLD PRICE FIELD
             const soldGroup = document.getElementById('lister-sold-price-group');
@@ -1224,6 +1238,18 @@ function initListerModule() {
         loadFieldHistory();
         initMassActionUI();
         await listerDB.init();
+        // --- MIGRATION: Fix Items Missing UUIDs ---
+        const allItems = await listerDB.getAllItems();
+        let fixedCount = 0;
+        for (const item of allItems) {
+            if (!item.uuid) {
+                item.uuid = generateUUID(); // Assign new timestamped UUID
+                await listerDB.saveItem(item);
+                fixedCount++;
+            }
+        }
+        if (fixedCount > 0) console.log(`System: Fixed ${fixedCount} items missing UUIDs.`);
+        // ------------------------------------------
         await populateCategoryFilter();
         // --- VERSION & BACKUP TRACKING ---
         const APP_VERSION = "1.0.1"; // CHANGE THIS NUMBER whenever you update code!
@@ -1444,6 +1470,8 @@ Make it catchy, use bullet points for features, and include a "Pickup in [Your C
             // Get raw values from the inputs
             const costInput = document.getElementById('lister-cost').value;
             const priceInput = document.getElementById('lister-price').value;
+            const retailInput = document.getElementById('lister-retail-price').value; // New
+            const invoiceInput = document.getElementById('lister-invoice-num').value; // New
             const soldInput = document.getElementById('lister-sold-price').value;
 
             const item = {
@@ -1460,6 +1488,8 @@ Make it catchy, use bullet points for features, and include a "Pickup in [Your C
                 cost: costInput === "" ? null : parseFloat(costInput),
                 price: priceInput === "" ? null : parseFloat(priceInput),
                 soldPrice: soldInput === "" ? null : parseFloat(soldInput),
+                retailPrice: retailInput === "" ? null : parseFloat(retailInput), // New
+                invoiceNum: invoiceInput, // New
                 description: document.getElementById('lister-description').value,
                 brand: brandInput ? brandInput.value : '',
                 size: sizeInput ? sizeInput.value : '',
@@ -1549,18 +1579,31 @@ Make it catchy, use bullet points for features, and include a "Pickup in [Your C
             const item = await listerDB.getItem(id);
             if (!item) return;
 
-            // Create a copy
+            // 1. Create a shallow copy
             const newItem = { ...item };
-            delete newItem.id; // Clear database ID
+            delete newItem.id; // Remove the database ID so a new one is created
 
-            // --- CRITICAL: Give Copy a Brand New UUID ---
+            // 2. CRITICAL: Generate a brand new UUID
+            // This guarantees the system knows it's a unique item
             newItem.uuid = generateUUID();
-            // -------------------------------------------
 
-            newItem.title = `${newItem.title} (Copy)`;
+            // 3. Smart Title Logic (Detects "Copy" and increments number)
+            const title = newItem.title;
+            const copyRegex = / \(Copy(?: (\d+))?\)$/;
+            const match = title.match(copyRegex);
+
+            if (match) {
+                // If it already says "(Copy)" or "(Copy 2)"
+                const num = match[1] ? parseInt(match[1], 10) : 1;
+                newItem.title = title.replace(copyRegex, ` (Copy ${num + 1})`);
+            } else {
+                // First time copying
+                newItem.title = `${title} (Copy)`;
+            }
+
             newItem.status = 'Draft';
 
-            // Clone photos array so they don't mix
+            // 4. Photo Safety (Prevent shared references)
             if (newItem.photos) {
                 newItem.photos = [...newItem.photos];
             }
@@ -1908,34 +1951,36 @@ Make it catchy, use bullet points for features, and include a "Pickup in [Your C
                 const exportableChunk = [];
 
                 for (const item of chunkItems) {
-                    // --- SAFETY CHECK START ---
-                    // If one item is corrupt, we skip it instead of crashing the whole backup
+                    // --- ROBUST EXPORT LOGIC ---
+                    // We define the export object first so we don't lose the item if photos fail
+                    const exportItem = { ...item, photos: [], listings_backup: [] };
+
                     try {
-                        // A. Process Photos
-                        const photos = [];
+                        // A. Safer Photo Processing
                         if (Array.isArray(item.photos)) {
                             for (const p of item.photos) {
-                                // If photo is corrupt, this might fail, so we catch it
-                                const b64 = await imageHandler.blobToBase64(p);
-                                if (b64) photos.push(b64);
+                                try {
+                                    const b64 = await imageHandler.blobToBase64(p);
+                                    if (b64) exportItem.photos.push(b64);
+                                } catch (photoErr) {
+                                    console.warn(`Skipping bad photo in item "${item.title}"`, photoErr);
+                                }
                             }
                         }
 
-                        // B. Find related Listings (Links) for this item
+                        // B. Link Processing
                         const myLinks = allListings.filter(l => l.itemId === item.id);
+                        exportItem.listings_backup = myLinks;
 
-                        // C. Add to export object
-                        exportableChunk.push({
-                            ...item,
-                            photos,
-                            listings_backup: myLinks
-                        });
+                        // C. Add to chunk
+                        exportableChunk.push(exportItem);
 
                     } catch (itemErr) {
-                        console.error(`Skipping corrupt item: ${item.title}`, itemErr);
-                        showToast(`Warning: Skipped corrupt item "${item.title}"`);
+                        // This catch should rarely trigger now, but just in case:
+                        console.error(`Critical error exporting item: ${item.title}`, itemErr);
+                        // Even if it fails, try to push the raw item without photos
+                        exportableChunk.push({ ...item, photos: [], notes: (item.notes || '') + " [Export Error: Photos Lost]" });
                     }
-                    // --- SAFETY CHECK END ---
                 }
 
                 const json = JSON.stringify({ version: 5, part: chunkIndex, items: exportableChunk }, null, 2);

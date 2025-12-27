@@ -26,7 +26,7 @@
         <input type="file" id="lister-import-file-input" class="is-hidden" accept="application/json" multiple>
 
         <div class="lister-filters-bar">
-            <input type="search" id="lister-search" class="lister-input" placeholder="Search items...">
+            <input type="search" id="lister-search" class="lister-input" placeholder="Search items, tags, invoice #...">
 
             <select id="lister-filter-status" class="lister-input">
                 <option value="">All Statuses</option>
@@ -150,10 +150,27 @@
                     <label>Qty</label>
                     <input type="number" id="lister-quantity" value="1" min="0">
                 </div>
-                <div class="form-group"><label>Cost</label><input type="number" id="lister-cost" step="0.01"></div>
-                <div class="form-group"><label>Price</label><input type="number" id="lister-price" step="0.01"></div>
+                <div class="form-group">
+                    <label>Cost</label>
+                    <input type="number" id="lister-cost" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>List Price</label>
+                    <input type="number" id="lister-price" step="0.01">
+                </div>
                 <div class="form-group is-hidden" id="lister-sold-price-group">
                     <label>Sold For</label><input type="number" id="lister-sold-price" step="0.01">
+                </div>
+            </div>
+
+            <div class="form-group-row">
+                <div class="form-group">
+                    <label>Retail/MSRP (Ref)</label>
+                    <input type="number" id="lister-retail-price" step="0.01" placeholder="Original Price...">
+                </div>
+                <div class="form-group">
+                    <label>Invoice/Receipt #</label>
+                    <input type="text" id="lister-invoice-num" placeholder="#12345...">
                 </div>
             </div>
 
@@ -173,6 +190,9 @@
                         <option value="good">Used - Good</option>
                         <option value="fair">Used - Fair</option>
                         <option value="parts">For Parts / Not Working</option>
+                        <option value="built_complete">Used - Built (Complete)</option>
+                        <option value="built_incomplete">Used - Built (Incomplete)</option>
+                        <option value="sealed_bags">Open Box (Sealed Bags)</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -393,18 +413,4 @@
         <span id="lister-last-backup">Last Backup: Never</span>
     </div>
 
-</div>
-<div id="lister-posting-modal" class="lister-modal-overlay is-hidden">
-</div>
-
-<div id="lister-stats-modal" class="lister-modal-overlay is-hidden">
-    <div class="lister-modal" style="max-width: 600px;">
-        <div class="lister-modal-header">
-            <h3>Business Dashboard</h3>
-            <button id="lister-stats-close-btn"
-                style="background:none; border:none; font-size:24px; cursor:pointer;">&times;</button>
-        </div>
-        <div class="lister-modal-content">
-        </div>
-    </div>
 </div>
