@@ -1303,3 +1303,73 @@ body.sourcing-active button[type="submit"] {
 input::-webkit-calendar-picker-indicator {
     display: none !important;
 }
+
+/* --- GALLERY GRID MODE --- */
+.lister-gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 15px;
+    padding: 15px 0;
+}
+
+.lister-gallery-card {
+    position: relative;
+    aspect-ratio: 1;
+    /* Makes it a perfect square */
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    background: #f8f9fa;
+    border: 3px solid transparent;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transition: transform 0.1s;
+}
+
+.lister-gallery-card:hover {
+    border-color: #0d6efd;
+    transform: scale(1.02);
+}
+
+.lister-gallery-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.lister-gallery-info {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.75);
+    color: white;
+    padding: 6px;
+    font-size: 11px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.lister-gallery-status {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: bold;
+    color: white;
+    text-transform: uppercase;
+}
+
+.lister-gallery-status.sold {
+    background: #28a745;
+}
+
+.lister-gallery-status.draft {
+    background: #6c757d;
+}
+
+.lister-gallery-status.active {
+    background: #0d6efd;
+}

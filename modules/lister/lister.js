@@ -261,79 +261,99 @@ function initListerModule() {
             alert("Export Error: " + e.message); // Show us the real error
         }
     }
-    // --- STATS LOGIC (ULTIMATE VERSION) ---
+    // --- STATS LOGIC (QUANTITY AWARE) ---
     async function openStatsModal() {
-        const items = await listerDB.getAllItems();
+        // 1. Get All Items
+        const allItems = await listerDB.getAllItems();
 
-        // Variables to track
+        // 2. Get Current Filters
+        const searchInput = document.getElementById('lister-search');
+        const searchTerm = searchInput ? (searchInput.value || '').toLowerCase() : '';
+        const filterStatus = document.getElementById('lister-filter-status').value;
+        const filterCategory = document.getElementById('lister-filter-category').value;
+
+        // 3. Filter Items
+        const items = allItems.filter(item => {
+            if (item.isHidden) return false;
+
+            const safeText = (txt) => (txt || '').toLowerCase();
+            const matchSearch =
+                safeText(item.title).includes(searchTerm) ||
+                safeText(item.brand).includes(searchTerm) ||
+                safeText(item.tags).includes(searchTerm) ||
+                safeText(item.invoiceNum).includes(searchTerm) ||
+                safeText(item.description).includes(searchTerm);
+
+            let matchStatus = true;
+            if (filterStatus && filterStatus !== 'All Statuses' && filterStatus !== '') {
+                matchStatus = (item.status || 'Draft') === filterStatus;
+            }
+
+            let itemCat = (item.category || '').trim();
+            if (itemCat) itemCat = itemCat.charAt(0).toUpperCase() + itemCat.slice(1);
+            const matchCategory = !filterCategory || filterCategory === 'all' || filterCategory === 'All Categories' || itemCat === filterCategory;
+
+            return matchSearch && matchStatus && matchCategory;
+        });
+
+        // 4. Calculate Stats (NOW MULTIPLYING BY QUANTITY)
         let totalSales = 0;
-        let totalCostSold = 0;     // COGS
-        let inventoryCost = 0;     // Value of unsold items
-
-        let soldCount = 0;         // Count of Sold
-        let activeCount = 0;       // Count of Unsold (Draft, Active, Inv)
+        let totalCostSold = 0;
+        let inventoryCost = 0;
+        let soldCount = 0;
+        let activeCount = 0;
 
         items.forEach(item => {
             const cost = parseFloat(item.cost) || 0;
             const soldPrice = parseFloat(item.soldPrice) || 0;
+            const qty = parseInt(item.quantity) || 1; // <--- NEW: Grab Quantity
 
             // CHECK: Is this a realized sale? 
-            // It counts if status is 'Sold' OR if it's 'Archived' but has a price attached.
             const isSold = (item.status === 'Sold') || (item.status === 'Archived' && soldPrice > 0);
 
             if (isSold) {
-                // SOLD ITEMS (Active Sold & Archived Sold)
+                // If sold, we assume "Sold Price" is the TOTAL for the lot, 
+                // but "Cost" is per unit.
                 totalSales += soldPrice;
-                totalCostSold += cost;
-                soldCount++;
+                totalCostSold += (cost * qty); // Cost * 5 units
+                soldCount += qty;              // Count 5 units
             } else if (item.status !== 'Archived') {
-                // UNSOLD ITEMS (Excluding dead/archived drafts)
-                // This catches Draft, Active, Pending, Inventory
-                inventoryCost += cost;
-                activeCount++;
+                // Unsold Inventory
+                inventoryCost += (cost * qty); // Cost * 10 units
+                activeCount += qty;            // Count 10 units
             }
-            // Note: Archived items with $0 sold price are ignored (dead drafts)
         });
 
-        // Calculations
         const netProfit = totalSales - totalCostSold;
-        const totalSpend = totalCostSold + inventoryCost; // Sold Cost + Unsold Cost
-        const totalItems = soldCount + activeCount;       // Sold Count + Unsold Count
+        const totalSpend = totalCostSold + inventoryCost;
+        const totalItems = soldCount + activeCount;
 
-        // Update DOM Elements
+        // 5. Update UI
+        const setVal = (id, val, isMoney = true) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = isMoney ? `$${val.toFixed(2)}` : val;
+        };
 
-        // 1. Profit & Sales
+        setVal('stat-total-sales', totalSales);
+        setVal('stat-cost-sold', totalCostSold);
+        setVal('stat-count-sold', soldCount, false);
+        setVal('stat-inventory-cost', inventoryCost);
+        setVal('stat-count-left', activeCount, false);
+        setVal('stat-total-spend', totalSpend);
+        setVal('stat-total-count', totalItems, false);
+
         const profitEl = document.getElementById('stat-net-profit');
         if (profitEl) {
             profitEl.textContent = `$${netProfit.toFixed(2)}`;
             profitEl.style.color = netProfit >= 0 ? '#28a745' : '#dc3545';
         }
 
-        const salesEl = document.getElementById('stat-total-sales');
-        if (salesEl) salesEl.textContent = `$${totalSales.toFixed(2)}`;
+        const titleEl = document.querySelector('#lister-stats-modal h3');
+        if (titleEl) {
+            if (items.length === allItems.length) titleEl.textContent = "Business Dashboard (All Time)";
+            else titleEl.textContent = `Dashboard (Filtered: ${items.length} listings)`;
+        }
 
-        // 2. Sold Stats
-        const costSoldEl = document.getElementById('stat-cost-sold');
-        if (costSoldEl) costSoldEl.textContent = `$${totalCostSold.toFixed(2)}`;
-
-        const countSoldEl = document.getElementById('stat-count-sold');
-        if (countSoldEl) countSoldEl.textContent = soldCount;
-
-        // 3. Current Inventory
-        const invCostEl = document.getElementById('stat-inventory-cost');
-        if (invCostEl) invCostEl.textContent = `$${inventoryCost.toFixed(2)}`;
-
-        const countLeftEl = document.getElementById('stat-count-left');
-        if (countLeftEl) countLeftEl.textContent = activeCount;
-
-        // 4. Lifetime Totals
-        const totalSpendEl = document.getElementById('stat-total-spend');
-        if (totalSpendEl) totalSpendEl.textContent = `$${totalSpend.toFixed(2)}`;
-
-        const totalCountEl = document.getElementById('stat-total-count');
-        if (totalCountEl) totalCountEl.textContent = totalItems;
-
-        // Show Modal
         document.getElementById('lister-stats-modal').classList.remove('is-hidden');
     }
 
@@ -497,8 +517,9 @@ function initListerModule() {
     }
 
 
-    // --- RENDER ITEMS (UPDATED WITH CHECKBOX & COPY) ---
-    // --- RENDER ITEMS (CLEANED) ---
+    // --- STATE VARIABLE FOR VIEW MODE ---
+    let isGalleryView = false;
+
     async function renderItemList() {
         // Fetch Items & Listings
         const [items, allListings] = await Promise.all([listerDB.getAllItems(), listerDB.getAllListings()]);
@@ -513,22 +534,26 @@ function initListerModule() {
         // Get View Elements
         const containerEl = document.getElementById('lister-item-list');
         const itemTemplate = document.getElementById('lister-item-template');
-
-        // Fix: Use correct ID from your HTML file
         const searchInput = document.getElementById('lister-search');
         const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
-
         const filterStatus = document.getElementById('lister-filter-status').value;
         const filterCategory = document.getElementById('lister-filter-category').value;
-        const isGrouped = document.getElementById('lister-group-toggle').checked; // Check Toggle
+        const isGrouped = document.getElementById('lister-group-toggle').checked;
 
         // Filter Items
         let filteredItems = items.filter(item => {
             if (item.isHidden) return false;
 
             const itemStatus = (item.status || 'Draft');
-            const matchSearch = item.title.toLowerCase().includes(searchTerm) ||
-                (item.tags && item.tags.toLowerCase().includes(searchTerm));
+
+            // --- SUPER SEARCH (INCLUDED) ---
+            const safeText = (txt) => (txt || '').toLowerCase();
+            const matchSearch =
+                safeText(item.title).includes(searchTerm) ||
+                safeText(item.brand).includes(searchTerm) ||
+                safeText(item.tags).includes(searchTerm) ||
+                safeText(item.invoiceNum).includes(searchTerm) ||
+                safeText(item.description).includes(searchTerm);
 
             let matchStatus = true;
             if (filterStatus && filterStatus !== 'All Statuses') {
@@ -547,99 +572,105 @@ function initListerModule() {
 
         containerEl.innerHTML = ''; // Clear List
 
-        // --- RENDER HELPER ---
+        // --- 1. GALLERY VIEW MODE ---
+        if (isGalleryView) {
+            const grid = document.createElement('div');
+            grid.className = 'lister-gallery-grid';
+
+            filteredItems.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'lister-gallery-card';
+                card.onclick = () => showFormView(item); // Click to Edit
+
+                // Image
+                const img = document.createElement('img');
+                if (item.photos && item.photos.length > 0) {
+                    img.src = URL.createObjectURL(item.photos[0]);
+                } else {
+                    img.src = 'modules/lister/placeholder.png'; // Fallback or blank
+                    img.style.opacity = "0.3";
+                }
+                card.appendChild(img);
+
+                // Status Badge
+                const statusBadge = document.createElement('div');
+                statusBadge.className = `lister-gallery-status ${item.status ? item.status.toLowerCase() : 'draft'}`;
+                statusBadge.textContent = item.status || 'Draft';
+                card.appendChild(statusBadge);
+
+                // Info Overlay
+                const info = document.createElement('div');
+                info.className = 'lister-gallery-info';
+
+                // Truncate Title
+                let shortTitle = item.title;
+                if (shortTitle.length > 15) shortTitle = shortTitle.substring(0, 15) + '...';
+
+                info.innerHTML = `
+                    <span>${shortTitle}</span>
+                    <span style="font-weight:bold; color:#4db8ff;">$${parseFloat(item.price || 0).toFixed(0)}</span>
+                `;
+                card.appendChild(info);
+
+                grid.appendChild(card);
+            });
+            containerEl.appendChild(grid);
+            return; // STOP HERE (Do not render list view)
+        }
+
+        // --- 2. LIST VIEW RENDERING (Standard) ---
+        // (This helper is the same as before)
         const renderCard = (item) => {
             const card = itemTemplate.content.cloneNode(true);
 
-            // Checkbox
             let cb = card.querySelector('.lister-item-checkbox');
             cb.dataset.id = item.id;
             cb.checked = selectedItemIds.has(item.id);
             cb.onchange = (e) => toggleSelection(item.id, e.target.checked);
 
-            // Data Binding
             card.querySelector('.lister-item-title').textContent = item.title;
 
-            // Category
             let displayCat = (item.category || 'Uncategorized').trim();
             if (displayCat) displayCat = displayCat.charAt(0).toUpperCase() + displayCat.slice(1);
             card.querySelector('.lister-item-category').textContent = displayCat;
-            // --- AGE / DAYS LISTED BADGE ---
+
             if (item.dateCreated) {
                 const start = new Date(item.dateCreated);
                 const end = item.status === 'Sold' && item.dateSold ? new Date(item.dateSold) : new Date();
                 const diffTime = Math.abs(end - start);
                 const days = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-                // 1. DRAFTS: Show Nothing (No pressure)
-                if (item.status === 'Draft') {
-                    // Do nothing
-                }
-
-                // 2. INVENTORY: Show Physical Date (Record Tracking)
-                else if (item.status === 'Inventory') {
-                    const dateStr = start.toLocaleDateString(); // e.g. "12/22/2023"
+                if (item.status === 'Inventory') {
+                    const dateStr = start.toLocaleDateString();
                     const timeSpan = document.createElement('span');
-                    timeSpan.style.color = '#17a2b8'; // Teal (Inventory color)
-                    timeSpan.style.fontSize = '0.85em';
-                    timeSpan.style.marginLeft = '8px';
+                    timeSpan.style.color = '#17a2b8';
                     timeSpan.textContent = `📅 Added: ${dateStr}`;
+                    timeSpan.style.fontSize = '0.85em'; timeSpan.style.marginLeft = '8px';
                     card.querySelector('.lister-item-meta').appendChild(timeSpan);
-                }
-
-                // 3. ACTIVE: Show "Days Listed" Counter (Pressure/Stale Check)
-                else if (item.status === 'Active' || item.status === 'Pending' || item.status === 'Sold') {
-                    const WARNING_DAYS = 14;
-                    const DANGER_DAYS = 30;
-
+                } else if (item.status === 'Active' || item.status === 'Pending' || item.status === 'Sold') {
                     let badgeText = `🕒 ${days}d`;
-                    let badgeColor = '#6c757d'; // Grey (Fresh)
-
-                    if (item.status === 'Sold') {
-                        badgeText = `🏁 Sold in ${days}d`;
-                        badgeColor = '#28a745';
-                    } else if (days > DANGER_DAYS) {
-                        badgeColor = '#dc3545'; // Red
-                        badgeText = `🔥 ${days}d`;
-                    } else if (days > WARNING_DAYS) {
-                        badgeColor = '#fd7e14'; // Orange
-                    }
+                    let badgeColor = '#6c757d';
+                    if (item.status === 'Sold') { badgeText = `🏁 Sold in ${days}d`; badgeColor = '#28a745'; }
+                    else if (days > 30) { badgeColor = '#dc3545'; badgeText = `🔥 ${days}d`; }
+                    else if (days > 14) { badgeColor = '#fd7e14'; }
 
                     const timeSpan = document.createElement('span');
                     timeSpan.style.color = badgeColor;
-                    timeSpan.style.fontSize = '0.9em';
-                    timeSpan.style.marginLeft = '8px';
-                    timeSpan.style.fontWeight = '500';
                     timeSpan.textContent = badgeText;
+                    timeSpan.style.fontSize = '0.9em'; timeSpan.style.marginLeft = '8px'; timeSpan.style.fontWeight = '500';
                     card.querySelector('.lister-item-meta').appendChild(timeSpan);
                 }
             }
 
-            // Price & Sold Display
             let priceVal = parseFloat(item.price);
-            let priceDisplay = "";
+            let priceDisplay = (item.price === null || isNaN(item.price)) ? "$--" : `$${parseFloat(item.price).toFixed(2)}`;
 
-            // If price is null (blank), show --
-            // If price is 0 (free), show $0.00
-            if (item.price === null || isNaN(item.price)) {
-                priceDisplay = "$--";
-            } else {
-                priceDisplay = `$${parseFloat(item.price).toFixed(2)}`;
-            }
-
-            // If Sold, show the crossed-out price logic
             if (item.status === 'Sold' && item.soldPrice) {
                 const originalPrice = isNaN(priceVal) ? 0 : priceVal;
-                priceDisplay = `
-                    <span style="text-decoration: line-through; color: #999; margin-right: 5px;">$${originalPrice.toFixed(2)}</span>
-                    <span style="color: #28a745; font-weight: bold;">$${parseFloat(item.soldPrice).toFixed(2)}</span>
-                `;
+                priceDisplay = `<span style="text-decoration: line-through; color: #999; margin-right: 5px;">$${originalPrice.toFixed(2)}</span><span style="color: #28a745; font-weight: bold;">$${parseFloat(item.soldPrice).toFixed(2)}</span>`;
             }
-
-            // Insert Price HTML
             card.querySelector('.lister-item-price').innerHTML = priceDisplay;
 
-            // Storage Location (NEW)
             if (item.location) {
                 const meta = card.querySelector('.lister-item-meta');
                 const locSpan = document.createElement('span');
@@ -648,12 +679,10 @@ function initListerModule() {
                 meta.appendChild(locSpan);
             }
 
-            // Status
             const sEl = card.querySelector('.lister-item-status');
             sEl.textContent = item.status || 'Draft';
             sEl.className = `lister-item-status status-badge status-${(item.status || 'draft').toLowerCase()}`;
 
-            // Image
             const img = card.querySelector('.lister-item-thumbnail');
             if (item.photos && item.photos.length > 0) img.src = URL.createObjectURL(item.photos[0]);
 
@@ -664,16 +693,12 @@ function initListerModule() {
                 const isFb = l.platform === 'Facebook';
                 const isPosh = l.platform === 'Poshmark';
                 let pillClass = 'platform-pill' + (isFb ? ' fb' : '') + (isPosh ? ' posh' : '');
-
                 const p = document.createElement('div');
                 p.className = pillClass;
-
                 let icon = `🔗`;
                 if (isFb) icon = `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>`;
                 if (isPosh) icon = `<span style="font-weight:bold; font-family:serif; font-size:12px; margin-right:2px;">P</span>`;
-
                 p.innerHTML = `<a href="${l.url}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${icon} ${l.platform}</a>`;
-
                 const del = document.createElement('button');
                 del.className = 'pill-delete-btn';
                 del.innerHTML = '×';
@@ -682,40 +707,27 @@ function initListerModule() {
                 pills.appendChild(p);
             });
 
-            // Buttons
-            // Buttons
+            // Buttons Logic
             const postBtn = card.querySelector('.lister-post-btn');
-
-            // LOGIC: If Inventory, show "List 1". If normal, show "Post".
             if (item.status === 'Inventory') {
                 postBtn.innerHTML = '📋 List 1';
-                postBtn.style.backgroundColor = '#17a2b8'; // Teal Color
+                postBtn.style.backgroundColor = '#17a2b8';
                 postBtn.title = "Take 1 from Inventory and move to Drafts";
-                postBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    listOneFromInventory(item.id);
-                };
-
-                // Show Qty on the card if it's inventory
+                postBtn.onclick = (e) => { e.stopPropagation(); listOneFromInventory(item.id); };
                 if (item.quantity > 1) {
                     const titleEl = card.querySelector('.lister-item-title');
                     if (titleEl) titleEl.innerHTML += ` <span style="font-size:0.8em; color:#17a2b8;">(x${item.quantity})</span>`;
                 }
-
             } else {
-                // Standard Selling Behavior
                 postBtn.innerHTML = '🚀 Post';
-                postBtn.style.backgroundColor = ''; // Reset color
-                postBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    openPostingAssistant(item);
-                };
+                postBtn.style.backgroundColor = '';
+                postBtn.onclick = (e) => { e.stopPropagation(); openPostingAssistant(item); };
             }
+
             card.querySelector('.lister-sold-btn').onclick = () => openSoldModal(item);
             card.querySelector('.lister-edit-btn').onclick = () => showFormView(item);
 
             const editBtn = card.querySelector('.lister-edit-btn');
-            // Add Copy Button
             const copyBtn = document.createElement('button');
             copyBtn.className = 'lister-icon-btn';
             copyBtn.innerHTML = '📄';
@@ -724,22 +736,12 @@ function initListerModule() {
             copyBtn.onclick = (e) => { e.stopPropagation(); duplicateItem(item.id); };
             editBtn.parentNode.insertBefore(copyBtn, editBtn.nextSibling);
 
-            // Smart Delete / Unbundle Logic
             card.querySelector('.lister-delete-btn').onclick = async (e) => {
-                e.stopPropagation(); // Stop click from opening the folder/card
-
-                // 1. If it is a BUNDLE, ask to Unbundle first
+                e.stopPropagation();
                 if (item.isBundle) {
-                    // Custom confirm message
                     const choice = confirm(`Unbundle "${item.title}"?\n\nOK = Restore original items (Recommended).\nCancel = Permanently Delete everything.`);
-
-                    if (choice) {
-                        await unbundleItem(item.id);
-                        return; // Stop here, do not run the delete code below
-                    }
+                    if (choice) { await unbundleItem(item.id); return; }
                 }
-
-                // 2. Standard Delete (For normal items or if user cancelled unbundle)
                 if (confirm('Delete this item permanently?')) {
                     await listerDB.deleteItem(item.id);
                     await listerDB.deleteListingsForItem(item.id);
@@ -751,28 +753,19 @@ function initListerModule() {
             return card;
         };
 
-        // --- GROUP LOGIC (VERTICAL STACK) ---
         if (isGrouped) {
             const groups = ['Draft', 'Active', 'Pending', 'Sold', 'Inventory', 'Archived'];
-
-            // 1. Create Main Container
             const stackContainer = document.createElement('div');
-            stackContainer.className = 'lister-dashboard-grid'; // Uses the new CSS class
+            stackContainer.className = 'lister-dashboard-grid';
 
             for (const status of groups) {
                 const groupItems = filteredItems.filter(i => (i.status || 'Draft') === status);
-
-                // Skip empty folders (Change to true if you want to see empty ones)
                 if (groupItems.length === 0) continue;
 
-                // 2. Create Wrapper Card
                 const folderCard = document.createElement('div');
                 folderCard.className = 'lister-folder-card';
-
-                // 3. Create Header
                 const header = document.createElement('div');
                 header.className = 'lister-folder-header';
-                // Add an arrow and the count
                 header.innerHTML = `
                     <div style="display:flex; align-items:center; gap:10px;">
                         <span style="font-size:18px;">📂</span> 
@@ -780,46 +773,23 @@ function initListerModule() {
                     </div>
                     <span class="count-badge" style="background:#eee; padding:4px 10px; border-radius:12px;">${groupItems.length}</span>
                  `;
-
-                // 4. Create Item List Container
                 const itemContainer = document.createElement('div');
                 itemContainer.className = 'lister-folder-items';
 
-                // 5. Click to Toggle (FIXED)
                 header.onclick = () => {
-                    // Check if it's currently open (flex). If not flex (or empty), it's closed.
                     const isOpen = itemContainer.style.display === 'flex';
-
-                    if (isOpen) {
-                        // CLOSE IT
-                        itemContainer.style.display = 'none';
-                        header.style.background = '#ffffff';
-                    } else {
-                        // OPEN IT
-                        itemContainer.style.display = 'flex';
-                        header.style.background = '#f1f3f5';
-                    }
+                    if (isOpen) { itemContainer.style.display = 'none'; header.style.background = '#ffffff'; }
+                    else { itemContainer.style.display = 'flex'; header.style.background = '#f1f3f5'; }
                 };
 
-                // 6. Add Items
-                groupItems.forEach(item => {
-                    const c = renderCard(item);
-                    itemContainer.appendChild(c);
-                });
-
-                // 7. Assemble
+                groupItems.forEach(item => { itemContainer.appendChild(renderCard(item)); });
                 folderCard.appendChild(header);
                 folderCard.appendChild(itemContainer);
                 stackContainer.appendChild(folderCard);
             }
-
             containerEl.appendChild(stackContainer);
-
         } else {
-            // Flat List (Standard View)
-            filteredItems.forEach(item => {
-                containerEl.appendChild(renderCard(item));
-            });
+            filteredItems.forEach(item => { containerEl.appendChild(renderCard(item)); });
         }
     }
 
@@ -1330,6 +1300,15 @@ Make it catchy, use bullet points for features, and include a "Pickup in [Your C
                 navigator.clipboard.writeText(prompt).then(() => {
                     showToast("🤖 AI Prompt Copied!");
                 });
+            };
+        }
+        // 5. Gallery Toggle Button
+        const galBtn = document.getElementById('lister-gallery-btn');
+        if (galBtn) {
+            galBtn.onclick = () => {
+                isGalleryView = !isGalleryView; // Toggle State
+                galBtn.textContent = isGalleryView ? "📝 List" : "🖼️ View"; // Change Label
+                renderItemList(); // Re-render
             };
         }
         renderItemList();
