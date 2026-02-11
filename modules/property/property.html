@@ -17,6 +17,7 @@
             <button id="btn-back-grid" class="back-btn">&larr; Back</button>
             <h3 id="detail-title">Edit Property</h3>
             <div class="header-actions">
+                <button id="btn-copy-ai" class="action-btn secondary">🤖 Copy for AI</button>
                 <a id="link-external" href="#" target="_blank" class="action-btn secondary" style="display:none;">🔗
                     Open Listing</a>
                 <button id="btn-save-property" class="action-btn primary">Save</button>
@@ -27,6 +28,12 @@
 
             <div class="detail-section">
                 <h4>📌 Vital Stats</h4>
+                <div class="form-row">
+                    <div class="input-group full-width">
+                        <label>Property Title (Internal Nickname)</label>
+                        <input type="text" id="prop-title" placeholder="e.g. The Lakeside Cabin">
+                    </div>
+                </div>
                 <div class="form-row">
                     <div class="input-group">
                         <label>MLS #</label>
@@ -44,47 +51,61 @@
                             <option value="Passed">🚫 Passed</option>
                         </select>
                     </div>
-                    <div class="input-group">
-                        <label>Current DOM</label>
-                        <input type="text" id="prop-display-dom" readonly style="background:#f0f0f0; color:#555;">
-                        <input type="hidden" id="prop-dom-imported"> <input type="hidden" id="prop-date-imported">
-                    </div>
                 </div>
                 <div class="form-row">
-                    <div class="input-group full-width">
+                    <div class="input-group">
                         <label>Address</label>
                         <input type="text" id="prop-address">
                     </div>
+                    <div class="input-group">
+                        <label>City</label>
+                        <input type="text" id="prop-city-manual">
+                    </div>
                 </div>
                 <div class="form-row">
-                    <div class="input-group full-width">
-                        <label>Listing URL (Hidden)</label>
+                    <div class="input-group">
+                        <label>Listing URL</label>
                         <input type="text" id="prop-url" placeholder="https://...">
+                    </div>
+                    <div class="input-group">
+                        <label>Current DOM</label>
+                        <input type="text" id="prop-display-dom" readonly style="background:#f0f0f0;">
+                        <input type="hidden" id="prop-dom-imported">
+                        <input type="hidden" id="prop-date-imported">
                     </div>
                 </div>
             </div>
 
             <div class="detail-section">
-                <h4>🏠 The Specs</h4>
+                <h4>🏠 The Specs & Utilities</h4>
                 <div class="form-row">
                     <div class="input-group">
                         <label>House Size (sqft)</label>
                         <input type="number" id="prop-house-size">
                     </div>
                     <div class="input-group">
-                        <label>Land Size (sqft/acres)</label>
+                        <label>Land Size</label>
                         <input type="text" id="prop-land-size">
                     </div>
                     <div class="input-group">
-                        <label>Zoning / Use</label>
-                        <input type="text" id="prop-zoning" placeholder="e.g. R1 / ALR">
+                        <label>Zoning</label>
+                        <input type="text" id="prop-zoning">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="input-group">
+                        <label>Power (Amps/Service)</label>
+                        <input type="text" id="prop-power" placeholder="e.g. 200A, Underground">
+                    </div>
+                    <div class="input-group">
+                        <label>Water / Septic</label>
+                        <input type="text" id="prop-water" placeholder="e.g. Community Well, Septic Field">
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="input-group full-width">
-                        <label>Garage, Shop & Features</label>
-                        <textarea id="prop-features" placeholder="e.g. Dbl Garage, 200A Service, Barn..."
-                            style="height: 50px;"></textarea>
+                        <label>General Features</label>
+                        <textarea id="prop-features" style="height: 50px;"></textarea>
                     </div>
                 </div>
             </div>
@@ -97,71 +118,86 @@
                         <input type="number" id="prop-risk-fire" min="1" max="5">
                     </div>
                     <div class="input-group">
-                        <label>Dist. to Fire Dept (km)</label>
-                        <input type="number" id="prop-dist-fire">
+                        <label>Climate/Flood Risk (1-5)</label>
+                        <input type="number" id="prop-risk-climate" min="1" max="5">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="input-group">
+                        <label>Dist. to Major City (km)</label>
+                        <input type="number" id="prop-dist-city" step="0.1">
+                    </div>
+                    <div class="input-group">
+                        <label>Dist. to Grocery (km)</label>
+                        <input type="number" id="prop-dist-grocery" step="0.1">
+                    </div>
+                    <div class="input-group">
+                        <label>Dist. to Hospital (km)</label>
+                        <input type="number" id="prop-dist-hospital" step="0.1">
                     </div>
                 </div>
             </div>
 
             <div class="detail-section">
-                <h4>💰 Financials & Carrying Costs</h4>
+                <h4>💰 Financials & Carry Costs</h4>
                 <div class="form-row">
                     <div class="input-group">
                         <label>List Price ($)</label>
                         <input type="number" id="prop-price">
                     </div>
                     <div class="input-group">
-                        <label>Market Val Est. ($)</label>
-                        <input type="number" id="prop-assessment" placeholder="Zealty/AI Est.">
+                        <label>Annual Tax ($)</label>
+                        <input type="number" id="prop-tax">
                     </div>
                     <div class="input-group">
-                        <label>Annual Prop Tax ($)</label>
-                        <input type="number" id="prop-tax">
+                        <label>Monthly Utilities Est ($)</label>
+                        <input type="number" id="prop-carry-utils" placeholder="Hydro, Water, Gas">
                     </div>
                 </div>
 
                 <div style="background: #e8f5e9; padding: 15px; border-radius: 8px; margin-top: 10px;">
-                    <h5 style="margin-top:0;">Monthly Cost Estimator</h5>
+                    <h5 style="margin-top:0;">Total Estimated Monthly Cost</h5>
                     <div class="form-row">
                         <div class="input-group">
-                            <label>Mortgage Amount ($)</label>
-                            <input type="number" id="calc-mortgage-amt" placeholder="0 for Cash">
+                            <label>Mortgage Principal ($)</label>
+                            <input type="number" id="calc-mortgage-amt">
                         </div>
                         <div class="input-group">
-                            <label>Interest Rate (%)</label>
+                            <label>Rate (%)</label>
                             <input type="number" id="calc-rate" value="5.0" step="0.1">
                         </div>
-                        <div class="input-group">
-                            <label>Amortization (Yrs)</label>
-                            <input type="number" id="calc-years" value="25">
-                        </div>
                     </div>
-                    <div id="calc-result" style="font-weight: bold; color: #2E7D32; text-align: right;">
-                        Est. Monthly: $0
+                    <div id="calc-result"
+                        style="font-weight: bold; color: #2E7D32; text-align: right; font-size: 1.1em;">
+                        Total Carry: $0/mo
                     </div>
                 </div>
             </div>
 
+            <div class="detail-section" style="border: 2px dashed #2E7D32;">
+                <h4>🤖 AI Data Updater</h4>
+                <p style="font-size: 0.8em; color: #666;">Paste the code block provided by the AI below to auto-update
+                    this property.</p>
+                <textarea id="ai-update-input" placeholder="Paste AI JSON code here..."
+                    style="height: 80px; font-family: monospace; font-size: 0.85em;"></textarea>
+                <button id="btn-apply-ai" class="action-btn secondary" style="width: 100%; margin-top: 10px;">Apply AI
+                    Update</button>
+            </div>
+
             <div class="detail-section ratings-section">
-                <h4>❤️ The Vibe Check</h4>
+                <h4>❤️ Vibe Check</h4>
                 <div class="ratings-grid">
                     <div class="rating-col">
-                        <h5>You</h5>
-                        <label>Score (1-10)</label>
-                        <input type="number" id="rate-user-loc" class="rating-input">
-                        <textarea id="note-user" placeholder="Notes..."></textarea>
+                        <h5>You</h5><input type="number" id="rate-user-loc" class="rating-input"><textarea
+                            id="note-user"></textarea>
                     </div>
                     <div class="rating-col">
-                        <h5>Spouse</h5>
-                        <label>Score (1-10)</label>
-                        <input type="number" id="rate-spouse-loc" class="rating-input">
-                        <textarea id="note-spouse" placeholder="Notes..."></textarea>
+                        <h5>Spouse</h5><input type="number" id="rate-spouse-loc" class="rating-input"><textarea
+                            id="note-spouse"></textarea>
                     </div>
                     <div class="rating-col">
-                        <h5>Realtor</h5>
-                        <label>Score (1-10)</label>
-                        <input type="number" id="rate-realtor-loc" class="rating-input">
-                        <textarea id="note-realtor" placeholder="Notes..."></textarea>
+                        <h5>Realtor</h5><input type="number" id="rate-realtor-loc" class="rating-input"><textarea
+                            id="note-realtor"></textarea>
                     </div>
                 </div>
             </div>

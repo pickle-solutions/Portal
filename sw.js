@@ -1,5 +1,5 @@
 // A new version number to revert to a stable state
-const CACHE_NAME = 'portal-spa-cache-v364';
+const CACHE_NAME = 'portal-spa-cache-v373';
 
 const urlsToCache = [
   '/',
