@@ -1,5 +1,5 @@
 // A new version number to revert to a stable state
-const CACHE_NAME = 'portal-spa-cache-v358';
+const CACHE_NAME = 'portal-spa-cache-v364';
 
 const urlsToCache = [
   '/',
@@ -33,6 +33,10 @@ const urlsToCache = [
   'modules/focus/focus.html',
   'modules/focus/focus.css',
   'modules/focus/focus.js',
+  // The New Property Module <-- ADD THESE LINES
+  'modules/property/property.html',
+  'modules/property/property.css',
+  'modules/property/property.js',
 ];
 
 self.addEventListener('install', event => {

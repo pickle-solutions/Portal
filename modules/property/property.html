@@ -1,0 +1,172 @@
+<div class="property-container">
+    <div class="property-header">
+        <h2>Property Command Center</h2>
+        <div class="property-controls">
+            <button id="btn-add-property" class="action-btn primary">+ Add</button>
+            <button id="btn-paste-property" class="action-btn secondary" title="Paste from Bookmark">📋 Paste</button>
+            <button id="btn-import-csv" class="action-btn secondary">Import CSV</button>
+            <button id="btn-export-csv" class="action-btn secondary">Export</button>
+            <input type="file" id="csv-upload" accept=".csv" style="display: none;">
+        </div>
+    </div>
+
+    <div id="property-grid-view" class="property-grid"></div>
+
+    <div id="property-detail-view" class="property-detail hidden">
+        <div class="detail-header">
+            <button id="btn-back-grid" class="back-btn">&larr; Back</button>
+            <h3 id="detail-title">Edit Property</h3>
+            <div class="header-actions">
+                <a id="link-external" href="#" target="_blank" class="action-btn secondary" style="display:none;">🔗
+                    Open Listing</a>
+                <button id="btn-save-property" class="action-btn primary">Save</button>
+            </div>
+        </div>
+
+        <div class="detail-content">
+
+            <div class="detail-section">
+                <h4>📌 Vital Stats</h4>
+                <div class="form-row">
+                    <div class="input-group">
+                        <label>MLS #</label>
+                        <input type="text" id="prop-mls">
+                    </div>
+                    <div class="input-group">
+                        <label>Status</label>
+                        <select id="prop-status">
+                            <option value="Watchlist">👀 Watchlist</option>
+                            <option value="Active">🟢 Active</option>
+                            <option value="Viewing">📅 Viewing Booked</option>
+                            <option value="Offer">✍️ Offer Made</option>
+                            <option value="Pending">🟠 Pending</option>
+                            <option value="Sold">🔴 Sold</option>
+                            <option value="Passed">🚫 Passed</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Current DOM</label>
+                        <input type="text" id="prop-display-dom" readonly style="background:#f0f0f0; color:#555;">
+                        <input type="hidden" id="prop-dom-imported"> <input type="hidden" id="prop-date-imported">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="input-group full-width">
+                        <label>Address</label>
+                        <input type="text" id="prop-address">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="input-group full-width">
+                        <label>Listing URL (Hidden)</label>
+                        <input type="text" id="prop-url" placeholder="https://...">
+                    </div>
+                </div>
+            </div>
+
+            <div class="detail-section">
+                <h4>🏠 The Specs</h4>
+                <div class="form-row">
+                    <div class="input-group">
+                        <label>House Size (sqft)</label>
+                        <input type="number" id="prop-house-size">
+                    </div>
+                    <div class="input-group">
+                        <label>Land Size (sqft/acres)</label>
+                        <input type="text" id="prop-land-size">
+                    </div>
+                    <div class="input-group">
+                        <label>Zoning / Use</label>
+                        <input type="text" id="prop-zoning" placeholder="e.g. R1 / ALR">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="input-group full-width">
+                        <label>Garage, Shop & Features</label>
+                        <textarea id="prop-features" placeholder="e.g. Dbl Garage, 200A Service, Barn..."
+                            style="height: 50px;"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="detail-section">
+                <h4>🔥 Risk & Proximity Matrix</h4>
+                <div class="form-row">
+                    <div class="input-group">
+                        <label>Wildfire Risk (1-5)</label>
+                        <input type="number" id="prop-risk-fire" min="1" max="5">
+                    </div>
+                    <div class="input-group">
+                        <label>Dist. to Fire Dept (km)</label>
+                        <input type="number" id="prop-dist-fire">
+                    </div>
+                </div>
+            </div>
+
+            <div class="detail-section">
+                <h4>💰 Financials & Carrying Costs</h4>
+                <div class="form-row">
+                    <div class="input-group">
+                        <label>List Price ($)</label>
+                        <input type="number" id="prop-price">
+                    </div>
+                    <div class="input-group">
+                        <label>Market Val Est. ($)</label>
+                        <input type="number" id="prop-assessment" placeholder="Zealty/AI Est.">
+                    </div>
+                    <div class="input-group">
+                        <label>Annual Prop Tax ($)</label>
+                        <input type="number" id="prop-tax">
+                    </div>
+                </div>
+
+                <div style="background: #e8f5e9; padding: 15px; border-radius: 8px; margin-top: 10px;">
+                    <h5 style="margin-top:0;">Monthly Cost Estimator</h5>
+                    <div class="form-row">
+                        <div class="input-group">
+                            <label>Mortgage Amount ($)</label>
+                            <input type="number" id="calc-mortgage-amt" placeholder="0 for Cash">
+                        </div>
+                        <div class="input-group">
+                            <label>Interest Rate (%)</label>
+                            <input type="number" id="calc-rate" value="5.0" step="0.1">
+                        </div>
+                        <div class="input-group">
+                            <label>Amortization (Yrs)</label>
+                            <input type="number" id="calc-years" value="25">
+                        </div>
+                    </div>
+                    <div id="calc-result" style="font-weight: bold; color: #2E7D32; text-align: right;">
+                        Est. Monthly: $0
+                    </div>
+                </div>
+            </div>
+
+            <div class="detail-section ratings-section">
+                <h4>❤️ The Vibe Check</h4>
+                <div class="ratings-grid">
+                    <div class="rating-col">
+                        <h5>You</h5>
+                        <label>Score (1-10)</label>
+                        <input type="number" id="rate-user-loc" class="rating-input">
+                        <textarea id="note-user" placeholder="Notes..."></textarea>
+                    </div>
+                    <div class="rating-col">
+                        <h5>Spouse</h5>
+                        <label>Score (1-10)</label>
+                        <input type="number" id="rate-spouse-loc" class="rating-input">
+                        <textarea id="note-spouse" placeholder="Notes..."></textarea>
+                    </div>
+                    <div class="rating-col">
+                        <h5>Realtor</h5>
+                        <label>Score (1-10)</label>
+                        <input type="number" id="rate-realtor-loc" class="rating-input">
+                        <textarea id="note-realtor" placeholder="Notes..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <button id="btn-delete-property" class="action-btn danger">Delete Property</button>
+        </div>
+    </div>
+</div>

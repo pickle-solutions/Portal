@@ -28,7 +28,8 @@ document.addEventListener('DOMContentLoaded', () => {
         'launch-vault': 'vault',
         'launch-tracker': 'tracker',
         'launch-lister': 'lister',
-        'launch-focus': 'focus'
+        'launch-focus': 'focus',
+        'launch-property': 'property'
     };
 
     appGrid.addEventListener('click', (e) => {
@@ -100,6 +101,10 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (moduleName === 'focus' && typeof initFocusModule === 'function') {
                 initFocusModule();
             }
+            else if (moduleName === 'property' && typeof initPropertyModule === 'function') { // <-- ADD THIS BLOCK
+                initPropertyModule();
+            }
+
 
             appGrid.classList.add('is-hidden');
             homeBtn.style.display = 'block';
@@ -114,7 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
         appContent.innerHTML = '';
 
         // Clean up styles/scripts
-        const mods = ['vault', 'tracker', 'lister'];
+        const mods = ['vault', 'tracker', 'lister', 'property'];
         mods.forEach(mod => {
             document.getElementById(`${mod}-style`)?.remove();
             document.getElementById(`${mod}-script`)?.remove();
