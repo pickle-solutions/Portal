@@ -1,208 +1,176 @@
 <div class="property-container">
     <div class="property-header">
-        <h2>Property Command Center</h2>
+        <div class="title-group">
+            <h2>Property Command</h2>
+            <span id="header-stats" class="badge-count">0 Properties</span>
+        </div>
         <div class="property-controls">
             <button id="btn-add-property" class="action-btn primary">+ Add</button>
-            <button id="btn-paste-property" class="action-btn secondary" title="Paste from Bookmark">📋 Paste</button>
-            <button id="btn-import-csv" class="action-btn secondary">Import CSV</button>
-            <button id="btn-export-csv" class="action-btn secondary">Export</button>
+            <button id="btn-paste-property" class="action-btn secondary">📋 Paste</button>
+            <div class="button-group">
+                <button id="btn-copy-new-ai" class="action-btn secondary" style="border-right:1px solid #ccc;">✨ Copy
+                    New</button>
+                <button id="btn-copy-bulk-ai" class="action-btn secondary">🤖 Copy All</button>
+            </div>
+            <button id="btn-bulk-ai" class="action-btn secondary">📥 Bulk Update</button>
+            <button id="btn-export-csv" class="action-btn secondary">Export CSV</button>
+            <button id="btn-import-csv-trigger" class="action-btn secondary">Import CSV</button>
             <input type="file" id="csv-upload" accept=".csv" style="display: none;">
         </div>
     </div>
 
+    <div id="filter-bar-container"></div>
     <div id="property-grid-view" class="property-grid"></div>
+
+    <div id="bulk-ai-modal" class="modal hidden">
+        <div class="modal-content">
+            <h4>📥 Bulk AI Update</h4>
+            <p>Paste the JSON array provided by the AI below.</p>
+            <textarea id="bulk-ai-input" placeholder='[{"mls":"R123", "city":"Kelowna"...}, ...]'></textarea>
+            <div class="modal-actions">
+                <button id="btn-close-bulk" class="action-btn secondary">Cancel</button>
+                <button id="btn-apply-bulk" class="action-btn primary">Apply All</button>
+            </div>
+        </div>
+    </div>
 
     <div id="property-detail-view" class="property-detail hidden">
         <div class="detail-header">
             <button id="btn-back-grid" class="back-btn">&larr; Back</button>
-            <h3 id="detail-title">Edit Property</h3>
+            <h3 id="detail-title-display">Edit Property</h3>
             <div class="header-actions">
-                <button id="btn-copy-ai" class="action-btn secondary">🤖 Copy for AI</button>
-                <a id="link-external" href="#" target="_blank" class="action-btn secondary" style="display:none;">🔗
-                    Open Listing</a>
+                <button id="btn-copy-ai" class="action-btn secondary">🤖 AI Prompt</button>
+                <a id="link-external" href="#" target="_blank" class="action-btn secondary">🔗 Link</a>
                 <button id="btn-save-property" class="action-btn primary">Save</button>
             </div>
         </div>
 
         <div class="detail-content">
+            <div class="detail-grid">
+                <div class="detail-main">
 
-            <div class="detail-section">
-                <h4>📌 Vital Stats</h4>
-                <div class="form-row">
-                    <div class="input-group full-width">
-                        <label>Property Title (Internal Nickname)</label>
-                        <input type="text" id="prop-title" placeholder="e.g. The Lakeside Cabin">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="input-group">
-                        <label>MLS #</label>
-                        <input type="text" id="prop-mls">
-                    </div>
-                    <div class="input-group">
-                        <label>Status</label>
-                        <select id="prop-status">
-                            <option value="Watchlist">👀 Watchlist</option>
-                            <option value="Active">🟢 Active</option>
-                            <option value="Viewing">📅 Viewing Booked</option>
-                            <option value="Offer">✍️ Offer Made</option>
-                            <option value="Pending">🟠 Pending</option>
-                            <option value="Sold">🔴 Sold</option>
-                            <option value="Passed">🚫 Passed</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="input-group">
-                        <label>Address</label>
-                        <input type="text" id="prop-address">
-                    </div>
-                    <div class="input-group">
-                        <label>City</label>
-                        <input type="text" id="prop-city-manual">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="input-group">
-                        <label>Listing URL</label>
-                        <input type="text" id="prop-url" placeholder="https://...">
-                    </div>
-                    <div class="input-group">
-                        <label>Current DOM</label>
-                        <input type="text" id="prop-display-dom" readonly style="background:#f0f0f0;">
-                        <input type="hidden" id="prop-dom-imported">
-                        <input type="hidden" id="prop-date-imported">
-                    </div>
-                </div>
-            </div>
-
-            <div class="detail-section">
-                <h4>🏠 The Specs & Utilities</h4>
-                <div class="form-row">
-                    <div class="input-group">
-                        <label>House Size (sqft)</label>
-                        <input type="number" id="prop-house-size">
-                    </div>
-                    <div class="input-group">
-                        <label>Land Size</label>
-                        <input type="text" id="prop-land-size">
-                    </div>
-                    <div class="input-group">
-                        <label>Zoning</label>
-                        <input type="text" id="prop-zoning">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="input-group">
-                        <label>Power (Amps/Service)</label>
-                        <input type="text" id="prop-power" placeholder="e.g. 200A, Underground">
-                    </div>
-                    <div class="input-group">
-                        <label>Water / Septic</label>
-                        <input type="text" id="prop-water" placeholder="e.g. Community Well, Septic Field">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="input-group full-width">
-                        <label>General Features</label>
-                        <textarea id="prop-features" style="height: 50px;"></textarea>
-                    </div>
-                </div>
-            </div>
-
-            <div class="detail-section">
-                <h4>🔥 Risk & Proximity Matrix</h4>
-                <div class="form-row">
-                    <div class="input-group">
-                        <label>Wildfire Risk (1-5)</label>
-                        <input type="number" id="prop-risk-fire" min="1" max="5">
-                    </div>
-                    <div class="input-group">
-                        <label>Climate/Flood Risk (1-5)</label>
-                        <input type="number" id="prop-risk-climate" min="1" max="5">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="input-group">
-                        <label>Dist. to Major City (km)</label>
-                        <input type="number" id="prop-dist-city" step="0.1">
-                    </div>
-                    <div class="input-group">
-                        <label>Dist. to Grocery (km)</label>
-                        <input type="number" id="prop-dist-grocery" step="0.1">
-                    </div>
-                    <div class="input-group">
-                        <label>Dist. to Hospital (km)</label>
-                        <input type="number" id="prop-dist-hospital" step="0.1">
-                    </div>
-                </div>
-            </div>
-
-            <div class="detail-section">
-                <h4>💰 Financials & Carry Costs</h4>
-                <div class="form-row">
-                    <div class="input-group">
-                        <label>List Price ($)</label>
-                        <input type="number" id="prop-price">
-                    </div>
-                    <div class="input-group">
-                        <label>Annual Tax ($)</label>
-                        <input type="number" id="prop-tax">
-                    </div>
-                    <div class="input-group">
-                        <label>Monthly Utilities Est ($)</label>
-                        <input type="number" id="prop-carry-utils" placeholder="Hydro, Water, Gas">
-                    </div>
-                </div>
-
-                <div style="background: #e8f5e9; padding: 15px; border-radius: 8px; margin-top: 10px;">
-                    <h5 style="margin-top:0;">Total Estimated Monthly Cost</h5>
-                    <div class="form-row">
-                        <div class="input-group">
-                            <label>Mortgage Principal ($)</label>
-                            <input type="number" id="calc-mortgage-amt">
+                    <div class="detail-section">
+                        <h4>📌 Vital Stats</h4>
+                        <div class="form-row">
+                            <div class="input-group full-width"><label>Title (Nickname)</label><input type="text"
+                                    id="prop-title"></div>
                         </div>
-                        <div class="input-group">
-                            <label>Rate (%)</label>
-                            <input type="number" id="calc-rate" value="5.0" step="0.1">
+                        <div class="form-row">
+                            <div class="input-group"><label>MLS #</label><input type="text" id="prop-mls"></div>
+                            <div class="input-group"><label>Status</label>
+                                <select id="prop-status">
+                                    <option value="Watchlist">👀 Watchlist</option>
+                                    <option value="Active">🟢 Active</option>
+                                    <option value="Viewing">📅 Viewing</option>
+                                    <option value="Offer">✍️ Offer</option>
+                                    <option value="Sold">🔴 Sold</option>
+                                    <option value="Passed">🚫 Passed</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="input-group"><label>Address</label><input type="text" id="prop-address"></div>
+                            <div class="input-group"><label>City</label><input type="text" id="prop-city"></div>
+                        </div>
+                        <input type="hidden" id="prop-url">
+                    </div>
+
+                    <div class="detail-section">
+                        <h4>🏠 House & Infrastructure</h4>
+                        <div class="form-row">
+                            <div class="input-group"><label>Bedrooms</label><input type="number" id="prop-bed"></div>
+                            <div class="input-group"><label>Bathrooms</label><input type="number" id="prop-bath"></div>
+                            <div class="input-group"><label>Suite?</label>
+                                <select id="prop-suite">
+                                    <option value="No">No</option>
+                                    <option value="Yes">Yes</option>
+                                    <option value="Potential">Potential</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="input-group"><label>House Size (sqft)</label><input type="number"
+                                    id="prop-houseSize"></div>
+                            <div class="input-group"><label>Land Size</label><input type="text" id="prop-landSize">
+                            </div>
+                            <div class="input-group"><label>Zoning</label><input type="text" id="prop-zoning"></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="input-group"><label>Power</label><input type="text" id="prop-power"></div>
+                            <div class="input-group"><label>Water</label><input type="text" id="prop-water"></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="input-group full-width"><label>Features</label><textarea id="prop-features"
+                                    style="height:60px;"></textarea></div>
                         </div>
                     </div>
-                    <div id="calc-result"
-                        style="font-weight: bold; color: #2E7D32; text-align: right; font-size: 1.1em;">
-                        Total Carry: $0/mo
+
+                    <div class="detail-section">
+                        <h4>🔥 Risk & Proximity</h4>
+                        <p style="font-size:0.8em; color:#666; margin-bottom:10px;">
+                            <strong>Risk Scale:</strong> 1 = Low Risk, 5 = Extreme High Risk
+                        </p>
+                        <div class="form-row">
+                            <div class="input-group"><label>Fire Risk (1-5)</label><input type="number"
+                                    id="prop-riskFire" min="1" max="5"></div>
+                            <div class="input-group"><label>Climate Risk (1-5)</label><input type="number"
+                                    id="prop-riskClimate" min="1" max="5"></div>
+                            <div class="input-group"><label>Dist. Fire Dept (km)</label><input type="number"
+                                    id="prop-distFire"></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="input-group"><label>Dist. City (km)</label><input type="number"
+                                    id="prop-distCity"></div>
+                            <div class="input-group"><label>Dist. Grocery (km)</label><input type="number"
+                                    id="prop-distGrocery"></div>
+                            <div class="input-group"><label>Dist. Hospital (km)</label><input type="number"
+                                    id="prop-distHospital"></div>
+                        </div>
+                    </div>
+
+                    <div class="detail-section">
+                        <h4>❤️ Vibe Check</h4>
+                        <div class="vibe-grid">
+                            <div class="vibe-col">
+                                <h5>You</h5><input type="number" id="rate-user-score" placeholder="1-10"><textarea
+                                    id="rate-user-note"></textarea>
+                            </div>
+                            <div class="vibe-col">
+                                <h5>Spouse</h5><input type="number" id="rate-spouse-score" placeholder="1-10"><textarea
+                                    id="rate-spouse-note"></textarea>
+                            </div>
+                            <div class="vibe-col">
+                                <h5>Realtor</h5><input type="number" id="rate-realtor-score"
+                                    placeholder="1-10"><textarea id="rate-realtor-note"></textarea>
+                            </div>
+                        </div>
+                        <button id="btn-delete-property" class="action-btn danger"
+                            style="width:100%; margin-top:20px;">Delete Property</button>
+                    </div>
+                </div>
+
+                <div class="detail-side">
+                    <div class="summary-card">
+                        <h4>💰 Financials</h4>
+                        <div class="calc-row"><span>List Price</span><input type="number" id="prop-price"></div>
+                        <div class="calc-row"><span>AI Est. Value</span><input type="number" id="prop-aiEst"
+                                style="border-color:#a5d6a7; background:#1b5e20;"></div>
+                        <div class="calc-row"><span>Tax/Yr</span><input type="number" id="prop-tax"></div>
+                        <div class="calc-row"><span>Utils/Mo</span><input type="number" id="prop-carryUtils"></div>
+                        <hr style="opacity:0.3; margin:10px 0;">
+                        <div class="calc-row"><span>Mortgage</span><input type="number" id="calc-mortgage"></div>
+                        <div class="calc-row"><span>Rate %</span><input type="number" id="calc-rate" step="0.1"
+                                value="5.2"></div>
+                        <div id="calc-result" class="total-result">$0 / mo</div>
+                    </div>
+
+                    <div class="detail-section ai-box" style="margin-top:20px; border: 2px dashed #2e7d32;">
+                        <h4>🤖 AI Data Updater</h4>
+                        <textarea id="ai-update-input" placeholder="Paste single JSON here..."></textarea>
+                        <button id="btn-apply-ai" class="action-btn secondary full-width">Apply AI</button>
                     </div>
                 </div>
             </div>
-
-            <div class="detail-section" style="border: 2px dashed #2E7D32;">
-                <h4>🤖 AI Data Updater</h4>
-                <p style="font-size: 0.8em; color: #666;">Paste the code block provided by the AI below to auto-update
-                    this property.</p>
-                <textarea id="ai-update-input" placeholder="Paste AI JSON code here..."
-                    style="height: 80px; font-family: monospace; font-size: 0.85em;"></textarea>
-                <button id="btn-apply-ai" class="action-btn secondary" style="width: 100%; margin-top: 10px;">Apply AI
-                    Update</button>
-            </div>
-
-            <div class="detail-section ratings-section">
-                <h4>❤️ Vibe Check</h4>
-                <div class="ratings-grid">
-                    <div class="rating-col">
-                        <h5>You</h5><input type="number" id="rate-user-loc" class="rating-input"><textarea
-                            id="note-user"></textarea>
-                    </div>
-                    <div class="rating-col">
-                        <h5>Spouse</h5><input type="number" id="rate-spouse-loc" class="rating-input"><textarea
-                            id="note-spouse"></textarea>
-                    </div>
-                    <div class="rating-col">
-                        <h5>Realtor</h5><input type="number" id="rate-realtor-loc" class="rating-input"><textarea
-                            id="note-realtor"></textarea>
-                    </div>
-                </div>
-            </div>
-
-            <button id="btn-delete-property" class="action-btn danger">Delete Property</button>
         </div>
     </div>
 </div>

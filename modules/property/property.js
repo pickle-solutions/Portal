@@ -1,394 +1,428 @@
-// Global State
 let propertyData = [];
 let currentPropId = null;
 
-/**
- * Initializes the property module
- */
+// --- VALUATION PROTOCOL ---
+const VALUATION_LOGIC = `
+VALUATION ALGORITHM (Luxury/Recreational Logic):
+1. ANCHOR METRIC: Identify the primary value driver (e.g., Waterfront frontage > House SqFt). Apply scarcity multipliers for rare assets (e.g., 300ft+ water = 2.5x land value).
+2. CMA (50% Weight): Filter for sold comps in the last 12 months. Apply -3% to -5% market friction adjustment for high DOM.
+3. REPLACEMENT COST (30% Weight): Calculate Land Value + Construction (e.g., $500-$600/sqft for specialized timber) + Infrastructure (Septic/Well).
+4. SCARCITY (20% Weight): Assess rarity. High scarcity = Low negotiation room.
+5. CALCULATION: Final Value = (CMA * 0.50) + (Replacement * 0.30) + (Scarcity * 0.20).
+`;
+
 function initPropertyModule() {
-    console.log('Property Module Loaded');
+    console.log('Property Module: Starting...');
+    if (typeof injectFilterBar !== 'function') {
+        return alert("Error: Please clear browser cache (Ctrl+F5) to load new features.");
+    }
     loadProperties();
     setupEventListeners();
     injectFilterBar();
     renderGrid();
 }
 
-// --- Data Management ---
-
 function loadProperties() {
-    const stored = localStorage.getItem('portal_properties');
-    if (stored) {
-        propertyData = JSON.parse(stored);
-    } else {
-        propertyData = [];
-    }
+    try {
+        const stored = localStorage.getItem('portal_properties');
+        propertyData = stored ? JSON.parse(stored) : [];
+    } catch (e) { propertyData = []; }
 }
 
 function saveProperties() {
-    localStorage.setItem('portal_properties', JSON.stringify(propertyData));
-    renderGrid();
-    updateCityDropdown();
-}
-
-// --- Logic & Calculations ---
-
-/**
- * Calculates current Days on Market based on the initial import
- */
-function getLiveDOM(prop) {
-    if (prop.importDate && prop.dom !== undefined) {
-        const importTime = new Date(prop.importDate).getTime();
-        const nowTime = new Date().getTime();
-        const diffDays = Math.floor((nowTime - importTime) / (1000 * 60 * 60 * 24));
-        return parseInt(prop.dom) + diffDays;
-    }
-    return prop.dom || 0;
-}
-
-/**
- * Calculates total monthly carry cost including mortgage, tax, and utilities
- */
-function calculateMonthlyCost() {
-    const principal = parseFloat(document.getElementById('calc-mortgage-amt').value) || 0;
-    const rate = parseFloat(document.getElementById('calc-rate').value) || 0;
-    const annualTax = parseFloat(document.getElementById('prop-tax').value) || 0;
-    const monthlyUtils = parseFloat(document.getElementById('prop-carry-utils').value) || 0;
-
-    let mortgagePayment = 0;
-    if (principal > 0 && rate > 0) {
-        const r = rate / 100 / 12;
-        const n = 25 * 12; // Defaulting to 25 year amortization
-        mortgagePayment = principal * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
-    }
-
-    const monthlyTax = annualTax / 12;
-    const total = mortgagePayment + monthlyTax + monthlyUtils;
-
-    document.getElementById('calc-result').innerText =
-        `Mortgage: $${Math.round(mortgagePayment)} + Tax: $${Math.round(monthlyTax)} + Utils: $${Math.round(monthlyUtils)} = Total: $${Math.round(total)}/mo`;
-}
-
-// --- AI Integration Functions ---
-
-/**
- * Copies the current property data and a prompt for an AI assistant
- */
-function copyForAI() {
-    const prop = propertyData.find(p => p.id === currentPropId);
-    if (!prop) {
-        alert("Please save the property first before copying for AI.");
-        return;
-    }
-
-    const aiPrompt = `
-I have a real estate listing I am tracking. Please research the area and listing details for the following address and return ONLY a JSON code block with these keys:
-"title" (a short nickname), "city", "houseSize" (sqft number), "landSize", "power" (amps), "water" (well/city), "riskFire" (1-5), "riskClimate" (1-5), "distCity" (km), "distGrocery" (km), "distHospital" (km), "tax" (annual), "carryUtils" (est. monthly).
-
-Address: ${prop.address}
-MLS: ${prop.mls}
-URL: ${prop.url}
-    `;
-
-    navigator.clipboard.writeText(aiPrompt).then(() => {
-        alert("AI Prompt and Data copied to clipboard! Paste this into ChatGPT or Gemini.");
-    });
-}
-
-/**
- * Takes the JSON output from an AI and maps it to the form fields
- */
-function applyAIUpdate() {
-    const input = document.getElementById('ai-update-input').value;
     try {
-        const aiData = JSON.parse(input);
+        localStorage.setItem('portal_properties', JSON.stringify(propertyData));
+        renderGrid();
+        updateCityDropdown();
+        const statsEl = document.getElementById('header-stats');
+        if (statsEl) statsEl.innerText = `${propertyData.length} Properties`;
+    } catch (e) { alert("Save Failed: " + e.message); }
+}
 
-        // Map JSON keys to HTML Input IDs
-        const mapping = {
-            'title': 'prop-title',
-            'city': 'prop-city-manual',
-            'houseSize': 'prop-house-size',
-            'landSize': 'prop-land-size',
-            'power': 'prop-power',
-            'water': 'prop-water',
-            'riskFire': 'prop-risk-fire',
-            'riskClimate': 'prop-risk-climate',
-            'distCity': 'prop-dist-city',
-            'distGrocery': 'prop-dist-grocery',
-            'distHospital': 'prop-dist-hospital',
-            'tax': 'prop-tax',
-            'carryUtils': 'prop-carry-utils'
-        };
+// --- AI Logic ---
 
-        for (let key in mapping) {
-            if (aiData[key] !== undefined) {
-                document.getElementById(mapping[key]).value = aiData[key];
-            }
+function getAIPromptFields() {
+    return `
+TASK: Act as a Critical Real Estate Appraiser. Do NOT be optimistic.
+${VALUATION_LOGIC}
+
+INSTRUCTIONS FOR VALUE:
+1. Determine a Low-High Market Value Range based on Comps.
+2. For the 'aiEst' field, return the CONSERVATIVE MIDPOINT (not the high end).
+3. If List Price > Market Value, your 'aiEst' MUST be lower than List Price.
+
+RETURN DATA (JSON):
+- title (short nickname)
+- mls, city
+- bed, bath, suite
+- houseSize, landSize
+- zoning
+- power, water
+- features (Start this string with "Est. Range: $X - $Y. " followed by key features)
+- riskFire, riskClimate
+- distFire, distCity, distGrocery, distHospital
+- tax
+- carryUtils
+- aiEst (The conservative single number value)
+`;
+}
+
+function copySinglePrompt() {
+    const prop = propertyData.find(p => p.id === currentPropId);
+    if (!prop) return alert("Select a property first.");
+    const prompt = `Research this property:\nAddress: ${prop.address}\nMLS: ${prop.mls}\n\n${getAIPromptFields()}`;
+    navigator.clipboard.writeText(prompt);
+    alert("Advanced Valuation Prompt Copied!");
+}
+
+function copyBulkPrompt() {
+    if (propertyData.length === 0) return alert("No properties found.");
+    const list = propertyData.map(p => `- ${p.address} (MLS: ${p.mls})`).join("\n");
+    const prompt = `Research these listings. Return ONLY a JSON ARRAY of objects.\n${getAIPromptFields()}\n\nListings:\n${list}`;
+    navigator.clipboard.writeText(prompt);
+    alert("Bulk Valuation Prompt Copied!");
+}
+
+// NEW: Only copy properties that have no AI Estimate yet
+function copyNewPrompt() {
+    const newProps = propertyData.filter(p => !p.aiEst || p.aiEst === 0);
+    if (newProps.length === 0) return alert("All properties already have valuations!");
+
+    const list = newProps.map(p => `- ${p.address} (MLS: ${p.mls})`).join("\n");
+    const prompt = `Research these NEW listings. Return ONLY a JSON ARRAY of objects.\n${getAIPromptFields()}\n\nListings:\n${list}`;
+    navigator.clipboard.writeText(prompt);
+    alert(`Copied prompt for ${newProps.length} un-valued properties.`);
+}
+
+function applyDataMap(data) {
+    const map = {
+        'title': 'prop-title', 'city': 'prop-city', 'mls': 'prop-mls',
+        'bed': 'prop-bed', 'bath': 'prop-bath', 'suite': 'prop-suite',
+        'houseSize': 'prop-houseSize', 'landSize': 'prop-landSize', 'zoning': 'prop-zoning',
+        'power': 'prop-power', 'water': 'prop-water', 'features': 'prop-features',
+        'tax': 'prop-tax', 'carryUtils': 'prop-carryUtils', 'aiEst': 'prop-aiEst',
+        'riskFire': 'prop-riskFire', 'riskClimate': 'prop-riskClimate',
+        'distFire': 'prop-distFire', 'distCity': 'prop-distCity',
+        'distGrocery': 'prop-distGrocery', 'distHospital': 'prop-distHospital'
+    };
+    for (let key in map) {
+        if (data[key] !== undefined && document.getElementById(map[key])) {
+            document.getElementById(map[key]).value = data[key];
         }
+    }
+}
 
-        alert("AI Data Applied! Review the fields and click Save.");
+function applySingleAIUpdate() {
+    try {
+        const data = JSON.parse(document.getElementById('ai-update-input').value);
+        applyDataMap(data);
+        document.getElementById('ai-update-input').value = '';
         calculateMonthlyCost();
-    } catch (e) {
-        alert("Invalid JSON. Please ensure you copied the entire code block from the AI.");
-    }
+        alert("Valuation Data Applied!");
+    } catch (e) { alert("Invalid JSON"); }
 }
 
-// --- Filter Bar Logic ---
-
-function injectFilterBar() {
-    if (document.getElementById('filter-bar-area')) return;
-
-    const controlBar = document.querySelector('.property-controls');
-    const filterContainer = document.createElement('div');
-    filterContainer.id = 'filter-bar-area';
-    filterContainer.style.cssText = `
-        display: flex; gap: 10px; align-items: center; background: #f8f9fa; 
-        padding: 10px; border-radius: 8px; margin-top: 10px; flex-wrap: wrap; border: 1px solid #ddd;
-    `;
-
-    filterContainer.innerHTML = `
-        <input type="text" id="filter-search" placeholder="🔍 Search address, title..." style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; flex: 1;">
-        <select id="filter-city" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;"><option value="All">All Cities</option></select>
-        <select id="filter-sort" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-            <option value="newest">Sort: Newest</option>
-            <option value="price_asc">Price: Low to High</option>
-            <option value="price_desc">Price: High to Low</option>
-        </select>
-        <span id="filter-stats" style="font-size: 0.85em; color: #666; margin-left: auto;"></span>
-    `;
-
-    controlBar.after(filterContainer);
-
-    document.getElementById('filter-search').addEventListener('input', applyFilters);
-    document.getElementById('filter-city').addEventListener('change', applyFilters);
-    document.getElementById('filter-sort').addEventListener('change', applyFilters);
-
-    updateCityDropdown();
+function applyBulkUpdate() {
+    try {
+        const list = JSON.parse(document.getElementById('bulk-ai-input').value);
+        if (!Array.isArray(list)) throw new Error("Not an array");
+        let count = 0;
+        list.forEach(item => {
+            const idx = propertyData.findIndex(p => p.mls === item.mls);
+            if (idx > -1) {
+                propertyData[idx] = { ...propertyData[idx], ...item };
+                count++;
+            }
+        });
+        saveProperties();
+        document.getElementById('bulk-ai-modal').classList.add('hidden');
+        document.getElementById('bulk-ai-input').value = '';
+        alert(`Updated ${count} properties with new valuations.`);
+    } catch (e) { alert("Bulk Error: " + e.message); }
 }
 
-function updateCityDropdown() {
-    const citySelect = document.getElementById('filter-city');
-    if (!citySelect) return;
-    const cities = [...new Set(propertyData.map(p => p.city || (p.address?.split(',')[1] || "Unknown").trim()))].sort();
-    const currentVal = citySelect.value;
-    citySelect.innerHTML = '<option value="All">All Cities</option>';
-    cities.forEach(c => {
-        const opt = document.createElement('option');
-        opt.value = c; opt.innerText = c;
-        citySelect.appendChild(opt);
-    });
-    citySelect.value = currentVal;
+// --- Standard Logic ---
+
+async function pasteFromClipboard() {
+    try {
+        const text = await navigator.clipboard.readText();
+        let incoming;
+        try { incoming = JSON.parse(text); } catch (e) { return alert("Clipboard not valid JSON."); }
+        if (!incoming.mls) return alert("Data missing MLS.");
+
+        const idx = propertyData.findIndex(p => p.mls === incoming.mls);
+        if (idx > -1) {
+            propertyData[idx] = { ...propertyData[idx], ...incoming };
+            alert(`Updated: ${incoming.mls}`);
+        } else {
+            incoming.id = Date.now().toString();
+            incoming.importDate = new Date().toISOString();
+            propertyData.push(incoming);
+            alert(`Added: ${incoming.address}`);
+        }
+        saveProperties();
+    } catch (e) { alert("Paste Error: " + e.message); }
 }
-
-function applyFilters() {
-    const search = document.getElementById('filter-search').value.toLowerCase();
-    const city = document.getElementById('filter-city').value;
-    const sortMode = document.getElementById('filter-sort').value;
-
-    let filtered = propertyData.filter(p => {
-        const searchStr = (p.address + (p.title || "") + (p.mls || "")).toLowerCase();
-        const matchesSearch = searchStr.includes(search);
-        const pCity = p.city || (p.address?.split(',')[1] || "").trim();
-        const matchesCity = city === "All" || pCity === city;
-        return matchesSearch && matchesCity;
-    });
-
-    if (sortMode === 'price_asc') filtered.sort((a, b) => (parseFloat(a.price) || 0) - (parseFloat(b.price) || 0));
-    else if (sortMode === 'price_desc') filtered.sort((a, b) => (parseFloat(b.price) || 0) - (parseFloat(a.price) || 0));
-    else filtered.sort((a, b) => new Date(b.importDate) - new Date(a.importDate));
-
-    renderGrid(filtered);
-    document.getElementById('filter-stats').innerText = `${filtered.length} Props`;
-}
-
-// --- DOM Rendering ---
-
-function renderGrid(dataToRender = propertyData) {
-    const grid = document.getElementById('property-grid-view');
-    grid.innerHTML = '';
-
-    if (dataToRender.length === 0) {
-        grid.innerHTML = '<p style="text-align:center; grid-column: 1/-1;">No properties found.</p>';
-        return;
-    }
-
-    dataToRender.forEach(prop => {
-        const card = document.createElement('div');
-        card.className = `property-card status-${prop.status.replace(/\s+/g, '')}`;
-        card.onclick = () => openProperty(prop.id);
-
-        const displayTitle = prop.title || prop.address || 'Untitled';
-        const displayCity = prop.city || (prop.address?.split(',')[1] || "Unknown").trim();
-
-        card.innerHTML = `
-            <div class="card-header">
-                <h3>${displayTitle}</h3>
-                <small>${prop.address || 'No Address'}</small>
-            </div>
-            <div class="card-stats">
-                <span>$${(parseInt(prop.price) || 0).toLocaleString()}</span>
-                <span>${displayCity}</span>
-            </div>
-            <div class="ai-badge">${prop.status} (${getLiveDOM(prop)}d)</div>
-        `;
-        grid.appendChild(card);
-    });
-}
-
-// --- Editor Logic ---
 
 function openProperty(id) {
-    const prop = id ? propertyData.find(p => p.id === id) : {
-        id: Date.now().toString(),
-        importDate: new Date().toISOString(),
-        status: 'Watchlist'
+    const p = propertyData.find(x => x.id === id) || {
+        id: Date.now().toString(), status: 'Watchlist', ratings: { user: {}, spouse: {}, realtor: {} }
     };
-    currentPropId = prop.id;
+    currentPropId = p.id;
 
-    // Fill Fields
-    document.getElementById('prop-title').value = prop.title || '';
-    document.getElementById('prop-mls').value = prop.mls || '';
-    document.getElementById('prop-status').value = prop.status || 'Watchlist';
-    document.getElementById('prop-address').value = prop.address || '';
-    document.getElementById('prop-city-manual').value = prop.city || '';
-    document.getElementById('prop-url').value = prop.url || '';
-    document.getElementById('prop-dom-imported').value = prop.dom || 0;
-    document.getElementById('prop-date-imported').value = prop.importDate;
-    document.getElementById('prop-display-dom').value = getLiveDOM(prop);
+    // 1. Map All Fields
+    const fields = ['title', 'mls', 'status', 'address', 'city', 'bed', 'bath', 'suite', 'houseSize', 'landSize', 'zoning', 'power', 'water', 'features', 'price', 'tax', 'carryUtils', 'aiEst', 'riskFire', 'riskClimate', 'distFire', 'distCity', 'distGrocery', 'distHospital'];
+    fields.forEach(f => {
+        const el = document.getElementById(`prop-${f}`);
+        if (el) el.value = p[f] || '';
+    });
 
-    document.getElementById('prop-house-size').value = prop.houseSize || '';
-    document.getElementById('prop-land-size').value = prop.landSize || '';
-    document.getElementById('prop-zoning').value = prop.zoning || '';
-    document.getElementById('prop-power').value = prop.power || '';
-    document.getElementById('prop-water').value = prop.water || '';
-    document.getElementById('prop-features').value = prop.features || '';
-
-    document.getElementById('prop-risk-fire').value = prop.riskFire || '';
-    document.getElementById('prop-risk-climate').value = prop.riskClimate || '';
-    document.getElementById('prop-dist-city').value = prop.distCity || '';
-    document.getElementById('prop-dist-grocery').value = prop.distGrocery || '';
-    document.getElementById('prop-dist-hospital').value = prop.distHospital || '';
-
-    document.getElementById('prop-price').value = prop.price || '';
-    document.getElementById('prop-tax').value = prop.tax || '';
-    document.getElementById('prop-carry-utils').value = prop.carryUtils || '';
-    document.getElementById('calc-mortgage-amt').value = prop.mortgageAmt || prop.price || '';
-
-    // Ratings
-    document.getElementById('rate-user-loc').value = prop.ratings?.user?.loc || '';
-    document.getElementById('note-user').value = prop.ratings?.user?.note || '';
-    document.getElementById('rate-spouse-loc').value = prop.ratings?.spouse?.loc || '';
-    document.getElementById('note-spouse').value = prop.ratings?.spouse?.note || '';
-    document.getElementById('rate-realtor-loc').value = prop.ratings?.realtor?.loc || '';
-    document.getElementById('note-realtor').value = prop.ratings?.realtor?.note || '';
-
+    // 2. URL Smart Fix
     const linkBtn = document.getElementById('link-external');
-    if (prop.url) { linkBtn.href = prop.url; linkBtn.style.display = 'inline-block'; }
-    else { linkBtn.style.display = 'none'; }
+    let rawUrl = p.url || '';
+    if (rawUrl) {
+        if (!rawUrl.startsWith('http')) rawUrl = 'https://' + rawUrl;
+        linkBtn.href = rawUrl;
+        linkBtn.style.display = 'inline-flex';
+        document.getElementById('prop-url').value = rawUrl;
+    } else {
+        linkBtn.style.display = 'none';
+        document.getElementById('prop-url').value = '';
+    }
 
-    calculateMonthlyCost();
+    // 3. Ratings
+    document.getElementById('rate-user-score').value = p.ratings?.user?.score || '';
+    document.getElementById('rate-user-note').value = p.ratings?.user?.note || '';
+    document.getElementById('rate-spouse-score').value = p.ratings?.spouse?.score || '';
+    document.getElementById('rate-spouse-note').value = p.ratings?.spouse?.note || '';
+    document.getElementById('rate-realtor-score').value = p.ratings?.realtor?.score || '';
+    document.getElementById('rate-realtor-note').value = p.ratings?.realtor?.note || '';
+
+    // 4. Mortgage (Default to 0 unless saved)
+    document.getElementById('calc-mortgage').value = p.mortgageAmt || 0;
+
     document.getElementById('property-grid-view').classList.add('hidden');
     document.getElementById('property-detail-view').classList.remove('hidden');
-    document.querySelector('.property-controls').classList.add('hidden');
-    if (document.getElementById('filter-bar-area')) document.getElementById('filter-bar-area').style.display = 'none';
+    const filterBar = document.getElementById('filter-bar-area');
+    if (filterBar) filterBar.style.display = 'none';
+    calculateMonthlyCost();
 }
 
 function saveCurrentProperty() {
+    const idx = propertyData.findIndex(p => p.id === currentPropId);
+
     const updated = {
         id: currentPropId,
-        title: document.getElementById('prop-title').value,
+        importDate: (idx > -1 ? propertyData[idx].importDate : new Date().toISOString()),
+
         mls: document.getElementById('prop-mls').value,
+        title: document.getElementById('prop-title').value,
         status: document.getElementById('prop-status').value,
         address: document.getElementById('prop-address').value,
-        city: document.getElementById('prop-city-manual').value,
+        city: document.getElementById('prop-city').value,
         url: document.getElementById('prop-url').value,
-        dom: document.getElementById('prop-dom-imported').value,
-        importDate: document.getElementById('prop-date-imported').value,
-        houseSize: document.getElementById('prop-house-size').value,
-        landSize: document.getElementById('prop-land-size').value,
+
+        bed: document.getElementById('prop-bed').value,
+        bath: document.getElementById('prop-bath').value,
+        suite: document.getElementById('prop-suite').value,
+        houseSize: document.getElementById('prop-houseSize').value,
+        landSize: document.getElementById('prop-landSize').value,
         zoning: document.getElementById('prop-zoning').value,
         power: document.getElementById('prop-power').value,
         water: document.getElementById('prop-water').value,
         features: document.getElementById('prop-features').value,
-        riskFire: document.getElementById('prop-risk-fire').value,
-        riskClimate: document.getElementById('prop-risk-climate').value,
-        distCity: document.getElementById('prop-dist-city').value,
-        distGrocery: document.getElementById('prop-dist-grocery').value,
-        distHospital: document.getElementById('prop-dist-hospital').value,
-        price: document.getElementById('prop-price').value,
-        tax: document.getElementById('prop-tax').value,
-        carryUtils: document.getElementById('prop-carry-utils').value,
-        mortgageAmt: document.getElementById('calc-mortgage-amt').value,
+
+        price: parseFloat(document.getElementById('prop-price').value) || 0,
+        aiEst: parseFloat(document.getElementById('prop-aiEst').value) || 0,
+        tax: parseFloat(document.getElementById('prop-tax').value) || 0,
+        carryUtils: parseFloat(document.getElementById('prop-carryUtils').value) || 0,
+        mortgageAmt: parseFloat(document.getElementById('calc-mortgage').value) || 0,
+
+        riskFire: document.getElementById('prop-riskFire').value,
+        riskClimate: document.getElementById('prop-riskClimate').value,
+        distFire: document.getElementById('prop-distFire').value,
+        distCity: document.getElementById('prop-distCity').value,
+        distGrocery: document.getElementById('prop-distGrocery').value,
+        distHospital: document.getElementById('prop-distHospital').value,
+
         ratings: {
-            user: { loc: document.getElementById('rate-user-loc').value, note: document.getElementById('note-user').value },
-            spouse: { loc: document.getElementById('rate-spouse-loc').value, note: document.getElementById('note-spouse').value },
-            realtor: { loc: document.getElementById('rate-realtor-loc').value, note: document.getElementById('note-realtor').value }
+            user: { score: document.getElementById('rate-user-score').value, note: document.getElementById('rate-user-note').value },
+            spouse: { score: document.getElementById('rate-spouse-score').value, note: document.getElementById('rate-spouse-note').value },
+            realtor: { score: document.getElementById('rate-realtor-score').value, note: document.getElementById('rate-realtor-note').value }
         }
     };
 
-    const index = propertyData.findIndex(p => p.id === currentPropId);
-    if (index >= 0) propertyData[index] = updated;
+    if (idx > -1) propertyData[idx] = updated;
     else propertyData.push(updated);
 
     saveProperties();
     closeEditor();
 }
 
+function calculateMonthlyCost() {
+    const mortgage = parseFloat(document.getElementById('calc-mortgage').value) || 0;
+    const tax = parseFloat(document.getElementById('prop-tax').value) || 0;
+    const utils = parseFloat(document.getElementById('prop-carryUtils').value) || 0;
+    const rate = parseFloat(document.getElementById('calc-rate').value) || 5.2;
+
+    let monthlyMtg = 0;
+    if (mortgage > 0) {
+        const r = (rate / 100) / 12;
+        const n = 300; // 25 years
+        monthlyMtg = mortgage * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+    }
+    const total = monthlyMtg + (tax / 12) + utils;
+    document.getElementById('calc-result').innerText = `$${Math.round(total).toLocaleString()} / mo`;
+}
+
 function closeEditor() {
     document.getElementById('property-detail-view').classList.add('hidden');
     document.getElementById('property-grid-view').classList.remove('hidden');
-    document.querySelector('.property-controls').classList.remove('hidden');
-    if (document.getElementById('filter-bar-area')) document.getElementById('filter-bar-area').style.display = 'flex';
+    const filterBar = document.getElementById('filter-bar-area');
+    if (filterBar) filterBar.style.display = 'flex';
     applyFilters();
 }
 
-function deleteCurrentProperty() {
-    if (confirm('Delete this property?')) {
-        propertyData = propertyData.filter(p => p.id !== currentPropId);
-        saveProperties();
-        closeEditor();
-    }
+// --- CSV Logic (Fixed to export ALL fields) ---
+function exportToCSV() {
+    if (!propertyData.length) return alert("No data");
+
+    // Explicit Column Order
+    const columns = [
+        "mls", "status", "title", "address", "city", "price", "aiEst", "tax", "carryUtils", "mortgageAmt",
+        "bed", "bath", "suite", "houseSize", "landSize", "zoning", "power", "water",
+        "riskFire", "riskClimate", "distFire", "distCity", "distGrocery", "distHospital",
+        "url", "features", "importDate",
+        "User_Score", "User_Note", "Spouse_Score", "Spouse_Note", "Realtor_Score", "Realtor_Note"
+    ];
+
+    const rows = propertyData.map(p => {
+        return columns.map(col => {
+            let val = "";
+            if (col.startsWith("User_")) val = p.ratings?.user?.[col.split("_")[1].toLowerCase()] || "";
+            else if (col.startsWith("Spouse_")) val = p.ratings?.spouse?.[col.split("_")[1].toLowerCase()] || "";
+            else if (col.startsWith("Realtor_")) val = p.ratings?.realtor?.[col.split("_")[1].toLowerCase()] || "";
+            else val = p[col] || "";
+            return `"${String(val).replace(/"/g, '""')}"`;
+        }).join(",");
+    });
+
+    const csvContent = columns.join(",") + "\n" + rows.join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `properties_${new Date().toISOString().slice(0, 10)}.csv`; a.click();
 }
 
-// --- Clipboard Support ---
+function handleCSVImport(e) {
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+        const text = evt.target.result;
+        const lines = text.split(/\r?\n/).filter(line => line.trim());
+        const headers = lines[0].split(",").map(h => h.trim());
 
-async function pastePropertyFromClipboard() {
-    try {
-        const text = await navigator.clipboard.readText();
-        let data = JSON.parse(text);
-        if (!data.mls && !data.address) { alert("Invalid property data."); return; }
-
-        const id = Date.now().toString();
-        const finalProp = {
-            ...data,
-            id: id,
-            importDate: new Date().toISOString(),
-            status: 'Watchlist'
-        };
-
-        propertyData.push(finalProp);
+        let count = 0;
+        for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.replace(/^"|"$/g, '').replace(/""/g, '"'));
+            const obj = { ratings: { user: {}, spouse: {}, realtor: {} } };
+            headers.forEach((h, idx) => {
+                const val = values[idx];
+                if (h.includes("User_")) obj.ratings.user[h.split("_")[1].toLowerCase()] = val;
+                else if (h.includes("Spouse_")) obj.ratings.spouse[h.split("_")[1].toLowerCase()] = val;
+                else if (h.includes("Realtor_")) obj.ratings.realtor[h.split("_")[1].toLowerCase()] = val;
+                else obj[h] = val;
+            });
+            if (obj.mls) {
+                const existingIdx = propertyData.findIndex(p => p.mls === obj.mls);
+                if (existingIdx > -1) propertyData[existingIdx] = { ...propertyData[existingIdx], ...obj };
+                else { obj.id = Date.now() + Math.random().toString(); propertyData.push(obj); }
+                count++;
+            }
+        }
         saveProperties();
-        alert(`Imported: ${data.address || data.mls}`);
-    } catch (err) {
-        alert("Clipboard error: " + err);
-    }
+        alert(`Imported ${count} properties!`);
+    };
+    reader.readAsText(e.target.files[0]);
 }
 
-// --- Events ---
-
+// --- Init & Events ---
 function setupEventListeners() {
-    document.getElementById('btn-add-property').addEventListener('click', () => openProperty(null));
-    document.getElementById('btn-save-property').addEventListener('click', saveCurrentProperty);
-    document.getElementById('btn-back-grid').addEventListener('click', closeEditor);
-    document.getElementById('btn-delete-property').addEventListener('click', deleteCurrentProperty);
-    document.getElementById('btn-paste-property').addEventListener('click', pastePropertyFromClipboard);
+    document.getElementById('btn-add-property').onclick = () => openProperty(null);
+    document.getElementById('btn-paste-property').onclick = pasteFromClipboard;
+    document.getElementById('btn-copy-bulk-ai').onclick = copyBulkPrompt;
+    document.getElementById('btn-copy-new-ai').onclick = copyNewPrompt; // NEW
 
-    // AI Helpers
-    document.getElementById('btn-copy-ai').addEventListener('click', copyForAI);
-    document.getElementById('btn-apply-ai').addEventListener('click', applyAIUpdate);
+    document.getElementById('btn-bulk-ai').onclick = () => document.getElementById('bulk-ai-modal').classList.remove('hidden');
+    document.getElementById('btn-close-bulk').onclick = () => document.getElementById('bulk-ai-modal').classList.add('hidden');
+    document.getElementById('btn-apply-bulk').onclick = applyBulkUpdate;
+    document.getElementById('btn-save-property').onclick = saveCurrentProperty;
+    document.getElementById('btn-back-grid').onclick = closeEditor;
+    document.getElementById('btn-delete-property').onclick = () => {
+        if (confirm("Delete?")) { propertyData = propertyData.filter(p => p.id !== currentPropId); saveProperties(); closeEditor(); }
+    };
+    document.getElementById('btn-copy-ai').onclick = copySinglePrompt;
+    document.getElementById('btn-apply-ai').onclick = applySingleAIUpdate;
+    document.getElementById('btn-export-csv').onclick = exportToCSV;
+    document.getElementById('btn-import-csv-trigger').onclick = () => document.getElementById('csv-upload').click();
+    document.getElementById('csv-upload').onchange = handleCSVImport;
+    ['prop-price', 'prop-tax', 'prop-carryUtils', 'calc-mortgage', 'calc-rate'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.oninput = calculateMonthlyCost;
+    });
+}
 
-    // Dynamic Calculations
-    const calcInputs = ['calc-mortgage-amt', 'calc-rate', 'prop-tax', 'prop-carry-utils'];
-    calcInputs.forEach(id => {
-        document.getElementById(id).addEventListener('input', calculateMonthlyCost);
+function injectFilterBar() {
+    const container = document.getElementById('filter-bar-container');
+    if (!container || document.getElementById('filter-bar-area')) return;
+    container.innerHTML = `<div id="filter-bar-area" style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
+        <input type="text" id="filter-search" placeholder="🔍 Search..." style="padding:10px; flex:1; border:1px solid #ccc; border-radius:8px; min-width:150px;">
+        <select id="filter-city" style="padding:10px; border:1px solid #ccc; border-radius:8px;"><option value="All">All Cities</option></select>
+        <select id="filter-sort" style="padding:10px; border:1px solid #ccc; border-radius:8px;"><option value="newest">Sort: Newest</option></select>
+    </div>`;
+    document.getElementById('filter-search').oninput = applyFilters;
+    document.getElementById('filter-city').onchange = applyFilters;
+    updateCityDropdown();
+}
+
+function updateCityDropdown() {
+    const sel = document.getElementById('filter-city');
+    if (!sel) return;
+    const cities = [...new Set(propertyData.map(p => p.city || ""))].filter(c => c).sort();
+    sel.innerHTML = '<option value="All">All Cities</option>' + cities.map(c => `<option value="${c}">${c}</option>`).join('');
+}
+
+function applyFilters() {
+    const search = document.getElementById('filter-search').value.toLowerCase();
+    const city = document.getElementById('filter-city').value;
+    const filtered = propertyData.filter(p => (p.address + p.title + p.mls).toLowerCase().includes(search) && (city === "All" || p.city === city));
+    renderGrid(filtered);
+}
+
+function renderGrid(data = propertyData) {
+    const grid = document.getElementById('property-grid-view');
+    grid.innerHTML = '';
+    if (data.length === 0) { grid.innerHTML = '<p style="width:100%; text-align:center; color:#666;">No properties found.</p>'; return; }
+
+    data.forEach(p => {
+        const card = document.createElement('div');
+        card.className = `property-card status-${p.status}`;
+        card.onclick = () => openProperty(p.id);
+        const title = p.title || p.address || 'Untitled';
+        const price = p.price ? `$${parseInt(p.price).toLocaleString()}` : '$ -';
+
+        let suiteBadge = "";
+        if (p.suite === "Yes") suiteBadge = `<span style="background:#e8f5e9; color:#2e7d32; padding:2px 6px; border-radius:4px; font-size:0.8em; margin-left:5px;">Suite</span>`;
+
+        card.innerHTML = `
+            <h3>${title}</h3>
+            <div class="card-stats">
+                <span>${price}</span>
+                <span>📍 ${p.city || 'Unknown'}</span>
+            </div>
+            <div style="margin-top:5px; font-size:0.9em; color:#666;">
+                ${p.bed || '-'} bds • ${p.bath || '-'} ba ${suiteBadge}
+            </div>
+            <div class="ai-badge">${p.status}</div>
+        `;
+        grid.appendChild(card);
     });
 }
