@@ -36,6 +36,7 @@ function saveProperties() {
     } catch (e) { alert("Save Failed: " + e.message); }
 }
 
+// --- UPDATED PROMPT: Specific Instructions for Suite & Utilities ---
 function getAIPromptFields() {
     return `
 TASK: Act as a Critical Real Estate Appraiser. Do NOT be optimistic.
@@ -48,15 +49,16 @@ INSTRUCTIONS FOR VALUE:
 RETURN JSON:
 - title (short nickname)
 - mls, city
-- bed, bath, suite
+- bed, bath
+- suite (Must be exactly one of: "Yes", "No", or "Potential")
 - houseSize, landSize
-- zoning
-- power, water
+- zoning (List ALL Official Codes e.g. "R1, C2". No long descriptions.)
+- power (e.g. 200amp, Grid), water (e.g. Municipal, Well)
 - features (Start string with "Est. Range: $X - $Y. ")
-- riskFire (1-5), riskClimate (1-5)
-- distFire, distCity, distGrocery, distHospital
-- tax
-- carryUtils
+- riskFire (1-5, 1=Low), riskClimate (1-5, 1=Low)
+- distFire, distCity, distGrocery, distHospital (km)
+- tax (Annual $)
+- carryUtils (Est. Total Monthly Cost for Heat + Hydro + Water + Sewer + Garbage. Exclude Tax.)
 - aiEst (Conservative single number)
 `;
 }
@@ -87,7 +89,7 @@ function copyNewPrompt() {
 }
 
 /**
- * FEATURE 2: UPDATED COMPARE TABLE (More Details)
+ * FEATURE 2: COMPARE TABLE
  */
 function openCompareModal() {
     const checks = document.querySelectorAll('.card-select:checked');
@@ -100,7 +102,6 @@ function openCompareModal() {
     comps.forEach(p => { html += `<th>${p.title || p.address}</th>`; });
     html += `</tr></thead><tbody>`;
 
-    // EXPANDED ROW LIST
     const rows = [
         { label: "Photo", key: "img", type: "img" },
         { label: "MLS #", key: "mls" },
@@ -110,7 +111,7 @@ function openCompareModal() {
         { label: "City", key: "city" },
         { label: "Tax / Yr", key: "tax", type: "money" },
         { label: "Utils / Mo", key: "carryUtils", type: "money" },
-        { label: "Mortgage/Mo", key: "mortgageAmt", type: "money" }, // Requires mortgageAmt calculated or saved
+        { label: "Mortgage/Mo", key: "mortgageAmt", type: "money" },
         { label: "Size (sqft)", key: "houseSize" },
         { label: "Land", key: "landSize" },
         { label: "Bed/Bath", key: "bed_bath" },
@@ -134,7 +135,6 @@ function openCompareModal() {
         comps.forEach(p => {
             let val = p[row.key] || '-';
 
-            // Special Formatters
             if (row.type === 'img') val = p.img ? `<img src="${p.img}">` : '(No Photo)';
             else if (row.type === 'money') val = p[row.key] ? `$${parseInt(p[row.key]).toLocaleString()}` : '-';
             else if (row.type === 'money_highlight') val = p.aiEst ? `<span class="compare-highlight">$${parseInt(p.aiEst).toLocaleString()}</span>` : '-';
@@ -155,12 +155,12 @@ function openCompareModal() {
 }
 
 /**
- * FEATURE 3: SMARTER SANITIZER (Fixes Risk Missing Issue)
+ * FEATURE 3: SMARTER SANITIZER (Now fixes Suite logic too!)
  */
 function sanitizeAIItem(item) {
     const clean = { ...item };
 
-    // Strict number fields
+    // 1. Clean Strict Numbers
     const numberFields = [
         'houseSize', 'bed', 'bath', 'price', 'aiEst', 'tax', 'carryUtils',
         'riskFire', 'riskClimate', 'distFire', 'distCity', 'distGrocery', 'distHospital'
@@ -170,28 +170,37 @@ function sanitizeAIItem(item) {
         if (clean[key] !== undefined && clean[key] !== null) {
             let rawStr = String(clean[key]).toLowerCase();
 
-            // RISK FIX: If AI says "Low", convert to 1. "High" convert to 5.
+            // Risk Logic: "Low" -> 1, "High" -> 5
             if ((key === 'riskFire' || key === 'riskClimate') && isNaN(parseFloat(rawStr))) {
                 if (rawStr.includes('low')) clean[key] = 1;
                 else if (rawStr.includes('mod')) clean[key] = 3;
                 else if (rawStr.includes('high')) clean[key] = 5;
-                else delete clean[key]; // Can't understand it
+                else delete clean[key];
                 return;
             }
 
-            // Standard Number Cleaning
+            // Remove commas and text
             const raw = String(clean[key]).replace(/,/g, '').replace(/[^0-9.-]/g, '');
             const val = parseFloat(raw);
 
-            if (!isNaN(val)) {
-                clean[key] = val;
-            } else {
-                delete clean[key];
-            }
+            if (!isNaN(val)) clean[key] = val;
+            else delete clean[key];
         } else {
             delete clean[key];
         }
     });
+
+    // 2. Clean "Suite" for Dropdown Compatibility
+    if (clean.suite) {
+        const s = String(clean.suite).toLowerCase();
+        if (s.includes('potential') || s.includes('unauthorized')) {
+            clean.suite = 'Potential';
+        } else if (s.includes('yes') || s.includes('legal') || s.includes('suite')) {
+            clean.suite = 'Yes';
+        } else {
+            clean.suite = 'No';
+        }
+    }
 
     return clean;
 }
