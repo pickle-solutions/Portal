@@ -1,21 +1,18 @@
 let propertyData = [];
 let currentPropId = null;
 
-// --- VALUATION PROTOCOL ---
 const VALUATION_LOGIC = `
 VALUATION ALGORITHM (Luxury/Recreational Logic):
-1. ANCHOR METRIC: Identify the primary value driver (e.g., Waterfront frontage > House SqFt). Apply scarcity multipliers for rare assets (e.g., 300ft+ water = 2.5x land value).
-2. CMA (50% Weight): Filter for sold comps in the last 12 months. Apply -3% to -5% market friction adjustment for high DOM.
-3. REPLACEMENT COST (30% Weight): Calculate Land Value + Construction (e.g., $500-$600/sqft for specialized timber) + Infrastructure (Septic/Well).
-4. SCARCITY (20% Weight): Assess rarity. High scarcity = Low negotiation room.
+1. ANCHOR METRIC: Identify the primary value driver (e.g., Waterfront frontage > House SqFt). Apply scarcity multipliers.
+2. CMA (50% Weight): Filter for sold comps in the last 12 months.
+3. REPLACEMENT COST (30% Weight): Calculate Land Value + Construction + Infrastructure.
+4. SCARCITY (20% Weight): Assess rarity.
 5. CALCULATION: Final Value = (CMA * 0.50) + (Replacement * 0.30) + (Scarcity * 0.20).
 `;
 
 function initPropertyModule() {
     console.log('Property Module: Starting...');
-    if (typeof injectFilterBar !== 'function') {
-        return alert("Error: Please clear browser cache (Ctrl+F5) to load new features.");
-    }
+    if (typeof injectFilterBar !== 'function') return alert("Error: Clear cache (Ctrl+F5).");
     loadProperties();
     setupEventListeners();
     injectFilterBar();
@@ -39,31 +36,28 @@ function saveProperties() {
     } catch (e) { alert("Save Failed: " + e.message); }
 }
 
-// --- AI Logic ---
-
 function getAIPromptFields() {
     return `
 TASK: Act as a Critical Real Estate Appraiser. Do NOT be optimistic.
 ${VALUATION_LOGIC}
-
 INSTRUCTIONS FOR VALUE:
 1. Determine a Low-High Market Value Range based on Comps.
-2. For the 'aiEst' field, return the CONSERVATIVE MIDPOINT (not the high end).
-3. If List Price > Market Value, your 'aiEst' MUST be lower than List Price.
+2. For 'aiEst', return the CONSERVATIVE MIDPOINT.
+3. If List Price > Market Value, 'aiEst' MUST be lower.
 
-RETURN DATA (JSON):
+RETURN JSON:
 - title (short nickname)
 - mls, city
 - bed, bath, suite
 - houseSize, landSize
 - zoning
 - power, water
-- features (Start this string with "Est. Range: $X - $Y. " followed by key features)
+- features (Start string with "Est. Range: $X - $Y. ")
 - riskFire, riskClimate
 - distFire, distCity, distGrocery, distHospital
 - tax
 - carryUtils
-- aiEst (The conservative single number value)
+- aiEst (Conservative single number)
 `;
 }
 
@@ -72,7 +66,7 @@ function copySinglePrompt() {
     if (!prop) return alert("Select a property first.");
     const prompt = `Research this property:\nAddress: ${prop.address}\nMLS: ${prop.mls}\n\n${getAIPromptFields()}`;
     navigator.clipboard.writeText(prompt);
-    alert("Advanced Valuation Prompt Copied!");
+    alert("Valuation Prompt Copied!");
 }
 
 function copyBulkPrompt() {
@@ -80,18 +74,57 @@ function copyBulkPrompt() {
     const list = propertyData.map(p => `- ${p.address} (MLS: ${p.mls})`).join("\n");
     const prompt = `Research these listings. Return ONLY a JSON ARRAY of objects.\n${getAIPromptFields()}\n\nListings:\n${list}`;
     navigator.clipboard.writeText(prompt);
-    alert("Bulk Valuation Prompt Copied!");
+    alert("Bulk Prompt Copied!");
 }
 
-// NEW: Only copy properties that have no AI Estimate yet
+// FIX: Now uses 'aiProcessed' flag instead of just checking if aiEst is 0
 function copyNewPrompt() {
-    const newProps = propertyData.filter(p => !p.aiEst || p.aiEst === 0);
-    if (newProps.length === 0) return alert("All properties already have valuations!");
-
+    const newProps = propertyData.filter(p => p.aiProcessed !== true);
+    if (newProps.length === 0) return alert("All properties have been AI Valued!");
     const list = newProps.map(p => `- ${p.address} (MLS: ${p.mls})`).join("\n");
     const prompt = `Research these NEW listings. Return ONLY a JSON ARRAY of objects.\n${getAIPromptFields()}\n\nListings:\n${list}`;
     navigator.clipboard.writeText(prompt);
-    alert(`Copied prompt for ${newProps.length} un-valued properties.`);
+    alert(`Copied prompt for ${newProps.length} properties.`);
+}
+
+function openCompareModal() {
+    const checks = document.querySelectorAll('.card-select:checked');
+    const ids = Array.from(checks).map(c => c.value);
+    if (ids.length < 2) return alert("Check at least 2 properties to compare.");
+    const comps = propertyData.filter(p => ids.includes(p.id));
+    const container = document.getElementById('compare-table-container');
+    let html = `<table class="compare-table"><thead><tr><th>Feature</th>`;
+    comps.forEach(p => { html += `<th>${p.title || p.address}</th>`; });
+    html += `</tr></thead><tbody>`;
+    const rows = [
+        { label: "Photo", key: "img", type: "img" },
+        { label: "List Price", key: "price", type: "money" },
+        { label: "AI Value", key: "aiEst", type: "money_highlight" },
+        { label: "Size (sqft)", key: "houseSize" },
+        { label: "Land", key: "landSize" },
+        { label: "Bed/Bath", key: "bed_bath" },
+        { label: "User Score", key: "user_score" },
+        { label: "Spouse Score", key: "spouse_score" },
+        { label: "Fire Risk", key: "riskFire" },
+        { label: "Dist. City", key: "distCity" }
+    ];
+    rows.forEach(row => {
+        html += `<tr><td>${row.label}</td>`;
+        comps.forEach(p => {
+            let val = p[row.key] || '-';
+            if (row.type === 'img') val = p.img ? `<img src="${p.img}">` : '(No Photo)';
+            if (row.type === 'money') val = p.price ? `$${parseInt(p.price).toLocaleString()}` : '-';
+            if (row.type === 'money_highlight') val = p.aiEst ? `<span class="compare-highlight">$${parseInt(p.aiEst).toLocaleString()}</span>` : '-';
+            if (row.key === 'bed_bath') val = `${p.bed || '-'}bd / ${p.bath || '-'}ba`;
+            if (row.key === 'user_score') val = p.ratings?.user?.score || '-';
+            if (row.key === 'spouse_score') val = p.ratings?.spouse?.score || '-';
+            html += `<td>${val}</td>`;
+        });
+        html += `</tr>`;
+    });
+    html += `</tbody></table>`;
+    container.innerHTML = html;
+    document.getElementById('compare-modal').classList.remove('hidden');
 }
 
 function applyDataMap(data) {
@@ -103,7 +136,8 @@ function applyDataMap(data) {
         'tax': 'prop-tax', 'carryUtils': 'prop-carryUtils', 'aiEst': 'prop-aiEst',
         'riskFire': 'prop-riskFire', 'riskClimate': 'prop-riskClimate',
         'distFire': 'prop-distFire', 'distCity': 'prop-distCity',
-        'distGrocery': 'prop-distGrocery', 'distHospital': 'prop-distHospital'
+        'distGrocery': 'prop-distGrocery', 'distHospital': 'prop-distHospital',
+        'img': 'prop-img'
     };
     for (let key in map) {
         if (data[key] !== undefined && document.getElementById(map[key])) {
@@ -116,9 +150,13 @@ function applySingleAIUpdate() {
     try {
         const data = JSON.parse(document.getElementById('ai-update-input').value);
         applyDataMap(data);
+        // Mark as processed
+        const idx = propertyData.findIndex(p => p.id === currentPropId);
+        if (idx > -1) propertyData[idx].aiProcessed = true;
+
         document.getElementById('ai-update-input').value = '';
         calculateMonthlyCost();
-        alert("Valuation Data Applied!");
+        alert("AI Data Applied! Click SAVE to finish.");
     } catch (e) { alert("Invalid JSON"); }
 }
 
@@ -130,18 +168,16 @@ function applyBulkUpdate() {
         list.forEach(item => {
             const idx = propertyData.findIndex(p => p.mls === item.mls);
             if (idx > -1) {
-                propertyData[idx] = { ...propertyData[idx], ...item };
+                propertyData[idx] = { ...propertyData[idx], ...item, aiProcessed: true };
                 count++;
             }
         });
         saveProperties();
         document.getElementById('bulk-ai-modal').classList.add('hidden');
         document.getElementById('bulk-ai-input').value = '';
-        alert(`Updated ${count} properties with new valuations.`);
+        alert(`Updated ${count} properties.`);
     } catch (e) { alert("Bulk Error: " + e.message); }
 }
-
-// --- Standard Logic ---
 
 async function pasteFromClipboard() {
     try {
@@ -149,7 +185,6 @@ async function pasteFromClipboard() {
         let incoming;
         try { incoming = JSON.parse(text); } catch (e) { return alert("Clipboard not valid JSON."); }
         if (!incoming.mls) return alert("Data missing MLS.");
-
         const idx = propertyData.findIndex(p => p.mls === incoming.mls);
         if (idx > -1) {
             propertyData[idx] = { ...propertyData[idx], ...incoming };
@@ -157,6 +192,7 @@ async function pasteFromClipboard() {
         } else {
             incoming.id = Date.now().toString();
             incoming.importDate = new Date().toISOString();
+            incoming.aiProcessed = false; // New property needs AI
             propertyData.push(incoming);
             alert(`Added: ${incoming.address}`);
         }
@@ -166,18 +202,15 @@ async function pasteFromClipboard() {
 
 function openProperty(id) {
     const p = propertyData.find(x => x.id === id) || {
-        id: Date.now().toString(), status: 'Watchlist', ratings: { user: {}, spouse: {}, realtor: {} }
+        id: Date.now().toString(), status: 'Watchlist', ratings: { user: {}, spouse: {}, realtor: {} }, aiProcessed: false
     };
     currentPropId = p.id;
-
-    // 1. Map All Fields
     const fields = ['title', 'mls', 'status', 'address', 'city', 'bed', 'bath', 'suite', 'houseSize', 'landSize', 'zoning', 'power', 'water', 'features', 'price', 'tax', 'carryUtils', 'aiEst', 'riskFire', 'riskClimate', 'distFire', 'distCity', 'distGrocery', 'distHospital'];
     fields.forEach(f => {
         const el = document.getElementById(`prop-${f}`);
         if (el) el.value = p[f] || '';
     });
-
-    // 2. URL Smart Fix
+    document.getElementById('prop-img').value = p.img || '';
     const linkBtn = document.getElementById('link-external');
     let rawUrl = p.url || '';
     if (rawUrl) {
@@ -189,18 +222,13 @@ function openProperty(id) {
         linkBtn.style.display = 'none';
         document.getElementById('prop-url').value = '';
     }
-
-    // 3. Ratings
     document.getElementById('rate-user-score').value = p.ratings?.user?.score || '';
     document.getElementById('rate-user-note').value = p.ratings?.user?.note || '';
     document.getElementById('rate-spouse-score').value = p.ratings?.spouse?.score || '';
     document.getElementById('rate-spouse-note').value = p.ratings?.spouse?.note || '';
     document.getElementById('rate-realtor-score').value = p.ratings?.realtor?.score || '';
     document.getElementById('rate-realtor-note').value = p.ratings?.realtor?.note || '';
-
-    // 4. Mortgage (Default to 0 unless saved)
     document.getElementById('calc-mortgage').value = p.mortgageAmt || 0;
-
     document.getElementById('property-grid-view').classList.add('hidden');
     document.getElementById('property-detail-view').classList.remove('hidden');
     const filterBar = document.getElementById('filter-bar-area');
@@ -210,18 +238,17 @@ function openProperty(id) {
 
 function saveCurrentProperty() {
     const idx = propertyData.findIndex(p => p.id === currentPropId);
-
     const updated = {
         id: currentPropId,
         importDate: (idx > -1 ? propertyData[idx].importDate : new Date().toISOString()),
-
+        aiProcessed: (idx > -1 ? propertyData[idx].aiProcessed : false),
         mls: document.getElementById('prop-mls').value,
         title: document.getElementById('prop-title').value,
         status: document.getElementById('prop-status').value,
         address: document.getElementById('prop-address').value,
         city: document.getElementById('prop-city').value,
         url: document.getElementById('prop-url').value,
-
+        img: document.getElementById('prop-img').value,
         bed: document.getElementById('prop-bed').value,
         bath: document.getElementById('prop-bath').value,
         suite: document.getElementById('prop-suite').value,
@@ -231,30 +258,25 @@ function saveCurrentProperty() {
         power: document.getElementById('prop-power').value,
         water: document.getElementById('prop-water').value,
         features: document.getElementById('prop-features').value,
-
         price: parseFloat(document.getElementById('prop-price').value) || 0,
         aiEst: parseFloat(document.getElementById('prop-aiEst').value) || 0,
         tax: parseFloat(document.getElementById('prop-tax').value) || 0,
         carryUtils: parseFloat(document.getElementById('prop-carryUtils').value) || 0,
         mortgageAmt: parseFloat(document.getElementById('calc-mortgage').value) || 0,
-
         riskFire: document.getElementById('prop-riskFire').value,
         riskClimate: document.getElementById('prop-riskClimate').value,
         distFire: document.getElementById('prop-distFire').value,
         distCity: document.getElementById('prop-distCity').value,
         distGrocery: document.getElementById('prop-distGrocery').value,
         distHospital: document.getElementById('prop-distHospital').value,
-
         ratings: {
             user: { score: document.getElementById('rate-user-score').value, note: document.getElementById('rate-user-note').value },
             spouse: { score: document.getElementById('rate-spouse-score').value, note: document.getElementById('rate-spouse-note').value },
             realtor: { score: document.getElementById('rate-realtor-score').value, note: document.getElementById('rate-realtor-note').value }
         }
     };
-
     if (idx > -1) propertyData[idx] = updated;
     else propertyData.push(updated);
-
     saveProperties();
     closeEditor();
 }
@@ -264,11 +286,10 @@ function calculateMonthlyCost() {
     const tax = parseFloat(document.getElementById('prop-tax').value) || 0;
     const utils = parseFloat(document.getElementById('prop-carryUtils').value) || 0;
     const rate = parseFloat(document.getElementById('calc-rate').value) || 5.2;
-
     let monthlyMtg = 0;
     if (mortgage > 0) {
         const r = (rate / 100) / 12;
-        const n = 300; // 25 years
+        const n = 300;
         monthlyMtg = mortgage * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
     }
     const total = monthlyMtg + (tax / 12) + utils;
@@ -283,19 +304,15 @@ function closeEditor() {
     applyFilters();
 }
 
-// --- CSV Logic (Fixed to export ALL fields) ---
 function exportToCSV() {
     if (!propertyData.length) return alert("No data");
-
-    // Explicit Column Order
     const columns = [
         "mls", "status", "title", "address", "city", "price", "aiEst", "tax", "carryUtils", "mortgageAmt",
         "bed", "bath", "suite", "houseSize", "landSize", "zoning", "power", "water",
         "riskFire", "riskClimate", "distFire", "distCity", "distGrocery", "distHospital",
-        "url", "features", "importDate",
+        "url", "img", "features", "importDate",
         "User_Score", "User_Note", "Spouse_Score", "Spouse_Note", "Realtor_Score", "Realtor_Note"
     ];
-
     const rows = propertyData.map(p => {
         return columns.map(col => {
             let val = "";
@@ -306,11 +323,10 @@ function exportToCSV() {
             return `"${String(val).replace(/"/g, '""')}"`;
         }).join(",");
     });
-
     const csvContent = columns.join(",") + "\n" + rows.join("\n");
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = `properties_${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+    const a = document.createElement('a'); a.href = url; a.download = `properties_export.csv`; a.click();
 }
 
 function handleCSVImport(e) {
@@ -319,7 +335,6 @@ function handleCSVImport(e) {
         const text = evt.target.result;
         const lines = text.split(/\r?\n/).filter(line => line.trim());
         const headers = lines[0].split(",").map(h => h.trim());
-
         let count = 0;
         for (let i = 1; i < lines.length; i++) {
             const values = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.replace(/^"|"$/g, '').replace(/""/g, '"'));
@@ -344,13 +359,13 @@ function handleCSVImport(e) {
     reader.readAsText(e.target.files[0]);
 }
 
-// --- Init & Events ---
 function setupEventListeners() {
     document.getElementById('btn-add-property').onclick = () => openProperty(null);
     document.getElementById('btn-paste-property').onclick = pasteFromClipboard;
     document.getElementById('btn-copy-bulk-ai').onclick = copyBulkPrompt;
-    document.getElementById('btn-copy-new-ai').onclick = copyNewPrompt; // NEW
-
+    document.getElementById('btn-copy-new-ai').onclick = copyNewPrompt;
+    document.getElementById('btn-compare-trigger').onclick = openCompareModal;
+    document.getElementById('btn-close-compare').onclick = () => document.getElementById('compare-modal').classList.add('hidden');
     document.getElementById('btn-bulk-ai').onclick = () => document.getElementById('bulk-ai-modal').classList.remove('hidden');
     document.getElementById('btn-close-bulk').onclick = () => document.getElementById('bulk-ai-modal').classList.add('hidden');
     document.getElementById('btn-apply-bulk').onclick = applyBulkUpdate;
@@ -401,27 +416,26 @@ function renderGrid(data = propertyData) {
     const grid = document.getElementById('property-grid-view');
     grid.innerHTML = '';
     if (data.length === 0) { grid.innerHTML = '<p style="width:100%; text-align:center; color:#666;">No properties found.</p>'; return; }
-
     data.forEach(p => {
         const card = document.createElement('div');
         card.className = `property-card status-${p.status}`;
-        card.onclick = () => openProperty(p.id);
-        const title = p.title || p.address || 'Untitled';
-        const price = p.price ? `$${parseInt(p.price).toLocaleString()}` : '$ -';
-
-        let suiteBadge = "";
-        if (p.suite === "Yes") suiteBadge = `<span style="background:#e8f5e9; color:#2e7d32; padding:2px 6px; border-radius:4px; font-size:0.8em; margin-left:5px;">Suite</span>`;
-
+        const imgHtml = p.img
+            ? `<div class="card-img-container"><img src="${p.img}" class="card-img" alt="Property"></div>`
+            : `<div class="card-img-container" style="display:flex;align-items:center;justify-content:center;color:#ccc;">🏠 No Photo</div>`;
         card.innerHTML = `
-            <h3>${title}</h3>
-            <div class="card-stats">
-                <span>${price}</span>
-                <span>📍 ${p.city || 'Unknown'}</span>
+            <input type="checkbox" class="card-select" value="${p.id}" onclick="event.stopPropagation()">
+            ${imgHtml}
+            <div class="card-content" onclick="openProperty('${p.id}')">
+                <h3 style="margin-top:0;">${p.title || p.address || 'Untitled'}</h3>
+                <div class="card-stats">
+                    <span>$${parseInt(p.price || 0).toLocaleString()}</span>
+                    <span>📍 ${p.city || 'Unknown'}</span>
+                </div>
+                <div style="margin-top:5px; font-size:0.9em; color:#666;">
+                    ${p.bed || '-'} bds • ${p.bath || '-'} ba
+                </div>
+                <div class="ai-badge">${p.status}</div>
             </div>
-            <div style="margin-top:5px; font-size:0.9em; color:#666;">
-                ${p.bed || '-'} bds • ${p.bath || '-'} ba ${suiteBadge}
-            </div>
-            <div class="ai-badge">${p.status}</div>
         `;
         grid.appendChild(card);
     });
