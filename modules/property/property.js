@@ -1,5 +1,6 @@
 let propertyData = [];
 let currentPropId = null;
+let currentLinks = []; // Temporarily stores links while editing
 
 const VALUATION_LOGIC = `
 VALUATION ALGORITHM (Luxury/Recreational Logic):
@@ -89,7 +90,7 @@ function copyNewPrompt() {
 }
 
 /**
- * FEATURE 2: COMPARE TABLE
+ * COMPARE TABLE
  */
 function openCompareModal() {
     const checks = document.querySelectorAll('.card-select:checked');
@@ -155,12 +156,11 @@ function openCompareModal() {
 }
 
 /**
- * FEATURE 3: SMARTER SANITIZER (Now fixes Suite logic too!)
+ * SMARTER SANITIZER
  */
 function sanitizeAIItem(item) {
     const clean = { ...item };
 
-    // 1. Clean Strict Numbers
     const numberFields = [
         'houseSize', 'bed', 'bath', 'price', 'aiEst', 'tax', 'carryUtils',
         'riskFire', 'riskClimate', 'distFire', 'distCity', 'distGrocery', 'distHospital'
@@ -170,7 +170,6 @@ function sanitizeAIItem(item) {
         if (clean[key] !== undefined && clean[key] !== null) {
             let rawStr = String(clean[key]).toLowerCase();
 
-            // Risk Logic: "Low" -> 1, "High" -> 5
             if ((key === 'riskFire' || key === 'riskClimate') && isNaN(parseFloat(rawStr))) {
                 if (rawStr.includes('low')) clean[key] = 1;
                 else if (rawStr.includes('mod')) clean[key] = 3;
@@ -179,7 +178,6 @@ function sanitizeAIItem(item) {
                 return;
             }
 
-            // Remove commas and text
             const raw = String(clean[key]).replace(/,/g, '').replace(/[^0-9.-]/g, '');
             const val = parseFloat(raw);
 
@@ -190,16 +188,11 @@ function sanitizeAIItem(item) {
         }
     });
 
-    // 2. Clean "Suite" for Dropdown Compatibility
     if (clean.suite) {
         const s = String(clean.suite).toLowerCase();
-        if (s.includes('potential') || s.includes('unauthorized')) {
-            clean.suite = 'Potential';
-        } else if (s.includes('yes') || s.includes('legal') || s.includes('suite')) {
-            clean.suite = 'Yes';
-        } else {
-            clean.suite = 'No';
-        }
+        if (s.includes('potential') || s.includes('unauthorized')) clean.suite = 'Potential';
+        else if (s.includes('yes') || s.includes('legal') || s.includes('suite')) clean.suite = 'Yes';
+        else clean.suite = 'No';
     }
 
     return clean;
@@ -275,6 +268,7 @@ async function pasteFromClipboard() {
             incoming.id = Date.now().toString();
             incoming.importDate = new Date().toISOString();
             incoming.aiProcessed = false;
+            incoming.links = []; // Initialize empty links
             propertyData.push(incoming);
             alert(`Added: ${incoming.address}`);
         }
@@ -282,9 +276,43 @@ async function pasteFromClipboard() {
     } catch (e) { alert("Paste Error: " + e.message); }
 }
 
+// --- LINK MANAGEMENT LOGIC ---
+function renderLinks() {
+    const container = document.getElementById('prop-links-container');
+    container.innerHTML = '';
+    currentLinks.forEach((link, idx) => {
+        container.innerHTML += `
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#f0f8f1; padding:10px; border:1px solid #c8e6c9; border-radius:6px;">
+                <a href="${link.url}" target="_blank" style="color:#2e7d32; text-decoration:none; font-weight:bold;">📎 ${link.name}</a>
+                <button type="button" onclick="removeLink(${idx})" style="background:none; border:none; color:#c62828; cursor:pointer; font-weight:bold; font-size:1.1em;">✖</button>
+            </div>
+        `;
+    });
+}
+
+window.removeLink = function (idx) {
+    currentLinks.splice(idx, 1);
+    renderLinks();
+};
+
+function addLink() {
+    const name = document.getElementById('new-link-name').value.trim();
+    const url = document.getElementById('new-link-url').value.trim();
+
+    if (!name || !url) return alert("Please provide both a name and a valid URL.");
+
+    let finalUrl = url;
+    if (!finalUrl.startsWith('http')) finalUrl = 'https://' + finalUrl;
+
+    currentLinks.push({ name: name, url: finalUrl });
+    document.getElementById('new-link-name').value = '';
+    document.getElementById('new-link-url').value = '';
+    renderLinks();
+}
+
 function openProperty(id) {
     const p = propertyData.find(x => x.id === id) || {
-        id: Date.now().toString(), status: 'Watchlist', ratings: { user: {}, spouse: {}, realtor: {} }, aiProcessed: false
+        id: Date.now().toString(), status: 'Watchlist', ratings: { user: {}, spouse: {}, realtor: {} }, aiProcessed: false, links: []
     };
     currentPropId = p.id;
 
@@ -294,6 +322,10 @@ function openProperty(id) {
         const el = document.getElementById(`prop-${f}`);
         if (el) el.value = p[f] || '';
     });
+
+    // Load Links
+    currentLinks = p.links ? [...p.links] : [];
+    renderLinks();
 
     document.getElementById('prop-img').value = p.img || '';
     const linkBtn = document.getElementById('link-external');
@@ -357,6 +389,7 @@ function saveCurrentProperty() {
         distCity: document.getElementById('prop-distCity').value,
         distGrocery: document.getElementById('prop-distGrocery').value,
         distHospital: document.getElementById('prop-distHospital').value,
+        links: currentLinks, // SAVE THE LINKS ARRAY
         ratings: {
             user: { score: document.getElementById('rate-user-score').value, note: document.getElementById('rate-user-note').value },
             spouse: { score: document.getElementById('rate-spouse-score').value, note: document.getElementById('rate-spouse-note').value },
@@ -392,19 +425,21 @@ function closeEditor() {
     applyFilters();
 }
 
+// --- CSV EXPORT/IMPORT WITH LINKS ---
 function exportToCSV() {
     if (!propertyData.length) return alert("No data");
     const columns = [
         "mls", "status", "title", "address", "city", "price", "aiEst", "tax", "carryUtils", "mortgageAmt",
         "bed", "bath", "suite", "houseSize", "landSize", "zoning", "power", "water",
         "riskFire", "riskClimate", "distFire", "distCity", "distGrocery", "distHospital",
-        "url", "img", "features", "notes", "importDate",
+        "url", "img", "features", "notes", "importDate", "links", // ADDED LINKS
         "User_Score", "User_Note", "Spouse_Score", "Spouse_Note", "Realtor_Score", "Realtor_Note"
     ];
     const rows = propertyData.map(p => {
         return columns.map(col => {
             let val = "";
-            if (col.startsWith("User_")) val = p.ratings?.user?.[col.split("_")[1].toLowerCase()] || "";
+            if (col === "links") val = p.links && p.links.length ? p.links.map(l => `${l.name}::${l.url}`).join(" | ") : "";
+            else if (col.startsWith("User_")) val = p.ratings?.user?.[col.split("_")[1].toLowerCase()] || "";
             else if (col.startsWith("Spouse_")) val = p.ratings?.spouse?.[col.split("_")[1].toLowerCase()] || "";
             else if (col.startsWith("Realtor_")) val = p.ratings?.realtor?.[col.split("_")[1].toLowerCase()] || "";
             else val = p[col] || "";
@@ -426,10 +461,16 @@ function handleCSVImport(e) {
         let count = 0;
         for (let i = 1; i < lines.length; i++) {
             const values = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.replace(/^"|"$/g, '').replace(/""/g, '"'));
-            const obj = { ratings: { user: {}, spouse: {}, realtor: {} } };
+            const obj = { ratings: { user: {}, spouse: {}, realtor: {} }, links: [] };
             headers.forEach((h, idx) => {
                 const val = values[idx];
-                if (h.includes("User_")) obj.ratings.user[h.split("_")[1].toLowerCase()] = val;
+                if (h === "links" && val) {
+                    obj.links = val.split(" | ").map(str => {
+                        const parts = str.split("::");
+                        return { name: parts[0] || "Link", url: parts[1] || "" };
+                    }).filter(l => l.url); // filter out empty URLs
+                }
+                else if (h.includes("User_")) obj.ratings.user[h.split("_")[1].toLowerCase()] = val;
                 else if (h.includes("Spouse_")) obj.ratings.spouse[h.split("_")[1].toLowerCase()] = val;
                 else if (h.includes("Realtor_")) obj.ratings.realtor[h.split("_")[1].toLowerCase()] = val;
                 else obj[h] = val;
@@ -459,6 +500,7 @@ function setupEventListeners() {
     document.getElementById('btn-apply-bulk').onclick = applyBulkUpdate;
     document.getElementById('btn-save-property').onclick = saveCurrentProperty;
     document.getElementById('btn-back-grid').onclick = closeEditor;
+    document.getElementById('btn-add-link').onclick = addLink; // NEW EVENT LISTENER
     document.getElementById('btn-delete-property').onclick = () => {
         if (confirm("Delete?")) { propertyData = propertyData.filter(p => p.id !== currentPropId); saveProperties(); closeEditor(); }
     };
@@ -532,7 +574,6 @@ function renderGrid(data = propertyData) {
         const card = document.createElement('div');
         card.className = `property-card status-${p.status}`;
 
-        // FEATURE 2: Added Suite Badge to Card
         const suiteBadge = (p.suite && p.suite !== 'No')
             ? `<span style="background:#fff3e0; color:#e65100; padding:2px 6px; border-radius:4px; font-size:0.8em; margin-left:5px; border:1px solid #ffe0b2;">Suite: ${p.suite}</span>`
             : '';

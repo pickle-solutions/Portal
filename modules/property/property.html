@@ -111,14 +111,8 @@
                     <div class="detail-section">
                         <h4>🏠 House & Infrastructure</h4>
                         <div class="form-row">
-                            <div class="input-group">
-                                <label>Bedrooms</label>
-                                <input type="number" id="prop-bed">
-                            </div>
-                            <div class="input-group">
-                                <label>Bathrooms</label>
-                                <input type="number" id="prop-bath">
-                            </div>
+                            <div class="input-group"><label>Bedrooms</label><input type="number" id="prop-bed"></div>
+                            <div class="input-group"><label>Bathrooms</label><input type="number" id="prop-bath"></div>
                             <div class="input-group">
                                 <label>Suite?</label>
                                 <select id="prop-suite">
@@ -129,41 +123,24 @@
                             </div>
                         </div>
                         <div class="form-row">
-                            <div class="input-group">
-                                <label>House Size</label>
-                                <input type="number" id="prop-houseSize">
+                            <div class="input-group"><label>House Size</label><input type="number" id="prop-houseSize">
                             </div>
-                            <div class="input-group">
-                                <label>Land Size</label>
-                                <input type="text" id="prop-landSize">
+                            <div class="input-group"><label>Land Size</label><input type="text" id="prop-landSize">
                             </div>
-                            <div class="input-group">
-                                <label>Zoning</label>
-                                <input type="text" id="prop-zoning">
-                            </div>
+                            <div class="input-group"><label>Zoning</label><input type="text" id="prop-zoning"></div>
                         </div>
                         <div class="form-row">
-                            <div class="input-group">
-                                <label>Power</label>
-                                <input type="text" id="prop-power">
-                            </div>
-                            <div class="input-group">
-                                <label>Water</label>
-                                <input type="text" id="prop-water">
-                            </div>
+                            <div class="input-group"><label>Power</label><input type="text" id="prop-power"></div>
+                            <div class="input-group"><label>Water</label><input type="text" id="prop-water"></div>
                         </div>
                         <div class="form-row">
-                            <div class="input-group full-width">
-                                <label>Features</label>
-                                <textarea id="prop-features" style="height:60px;"></textarea>
-                            </div>
+                            <div class="input-group full-width"><label>Features</label><textarea id="prop-features"
+                                    style="height:60px;"></textarea></div>
                         </div>
                         <div class="form-row">
-                            <div class="input-group full-width">
-                                <label>🛠️ Maintenance & Repair Notes</label>
-                                <textarea id="prop-notes" placeholder="e.g., Needs new roof, deck repairs..."
-                                    style="height:80px;"></textarea>
-                            </div>
+                            <div class="input-group full-width"><label>🛠️ Maintenance & Repair Notes</label><textarea
+                                    id="prop-notes" placeholder="e.g., Needs new roof..."
+                                    style="height:80px;"></textarea></div>
                         </div>
                     </div>
 
@@ -191,24 +168,42 @@
                         <h4>❤️ Vibe Check</h4>
                         <div class="vibe-grid">
                             <div class="vibe-col">
-                                <h5>You</h5>
-                                <input type="number" id="rate-user-score" placeholder="1-10">
-                                <textarea id="rate-user-note" placeholder="Notes..."></textarea>
+                                <h5>You</h5><input type="number" id="rate-user-score" placeholder="1-10"><textarea
+                                    id="rate-user-note" placeholder="Notes..."></textarea>
                             </div>
                             <div class="vibe-col">
-                                <h5>Spouse</h5>
-                                <input type="number" id="rate-spouse-score" placeholder="1-10">
-                                <textarea id="rate-spouse-note" placeholder="Notes..."></textarea>
+                                <h5>Spouse</h5><input type="number" id="rate-spouse-score" placeholder="1-10"><textarea
+                                    id="rate-spouse-note" placeholder="Notes..."></textarea>
                             </div>
                             <div class="vibe-col">
-                                <h5>Realtor</h5>
-                                <input type="number" id="rate-realtor-score" placeholder="1-10">
-                                <textarea id="rate-realtor-note" placeholder="Notes..."></textarea>
+                                <h5>Realtor</h5><input type="number" id="rate-realtor-score"
+                                    placeholder="1-10"><textarea id="rate-realtor-note"
+                                    placeholder="Notes..."></textarea>
                             </div>
                         </div>
-                        <button id="btn-delete-property" class="action-btn danger"
-                            style="width:100%; margin-top:20px;">Delete Property</button>
                     </div>
+
+                    <div class="detail-section">
+                        <h4>📎 Documents & Links</h4>
+                        <div id="prop-links-container"
+                            style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;">
+                        </div>
+                        <div class="form-row" style="align-items: flex-end;">
+                            <div class="input-group">
+                                <label>Link Name (e.g. Shared Folder)</label>
+                                <input type="text" id="new-link-name" placeholder="File Name...">
+                            </div>
+                            <div class="input-group">
+                                <label>URL Address</label>
+                                <input type="url" id="new-link-url" placeholder="https://...">
+                            </div>
+                            <button id="btn-add-link" class="action-btn secondary" style="margin-bottom: 2px;">+
+                                Add</button>
+                        </div>
+                        <button id="btn-delete-property" class="action-btn danger"
+                            style="width:100%; margin-top:30px;">Delete Property</button>
+                    </div>
+
                 </div>
 
                 <div class="detail-side">
